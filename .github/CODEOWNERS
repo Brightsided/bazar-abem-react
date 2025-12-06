@@ -1,0 +1,24 @@
+# Identificar los propietarios del código y los responsables de las revisiones
+
+# Propietario por defecto
+* @Brightsided
+
+# Backend
+/backend/ @Brightsided
+/backend/src/controllers/ @Brightsided
+/backend/src/services/ @Brightsided
+/backend/prisma/ @Brightsided
+
+# Frontend
+/frontend/ @Brightsided
+/frontend/src/components/ @Brightsided
+/frontend/src/pages/ @Brightsided
+
+# Documentación
+/docs/ @Brightsided
+*.md @Brightsided
+
+# Configuración
+.github/ @Brightsided
+.gitignore @Brightsided
+.gitattributes @Brightsided
