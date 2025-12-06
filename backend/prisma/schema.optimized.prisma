@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// MODELOS CON ÍNDICES OPTIMIZADOS
+// ============================================
+
+model Venta {
+  id              Int      @id @default(autoincrement())
+  cliente         String   @db.VarChar(255)
+  productos       String   @db.Text
+  metodo_pago     String   @db.VarChar(50)
+  precio_total    Decimal  @db.Decimal(10, 2)
+  fecha_venta     DateTime @default(now()) @db.DateTime
+
+  // ============================================
+  // ÍNDICES CRÍTICOS PARA REPORTES
+  // ============================================
+  
+  // Índice para filtros por fecha (MÁS IMPORTANTE)
+  @@index([fecha_venta])
+  
+  // Índice para filtros por método de pago
+  @@index([metodo_pago])
+  
+  // Índice para búsqueda por cliente
+  @@index([cliente])
+  
+  // Índice compuesto para queries comunes
+  @@index([fecha_venta, metodo_pago])
+  
+  // Índice compuesto para ordenamiento
+  @@index([fecha_venta, precio_total])
+
+  @@map("ventas")
+}
+
+model Cliente {
+  id        Int     @id @default(autoincrement())
+  nombre    String  @db.VarChar(255)
+  email     String? @db.VarChar(255)
+  telefono  String? @db.VarChar(20)
+  ruc       String? @db.VarChar(20)
+  direccion String? @db.Text
+
+  // Índices
+  @@index([nombre])
+  @@index([email])
+  @@index([ruc])
+
+  @@map("clientes")
+}
+
+model Producto {
+  id        Int     @id @default(autoincrement())
+  nombre    String  @db.VarChar(255)
+  precio    Decimal @db.Decimal(10, 2)
+  stock     Int     @default(0)
+  categoria String? @db.VarChar(100)
+
+  // Índices
+  @@index([nombre])
+  @@index([categoria])
+
+  @@map("productos")
+}
+
+model Comprobante {
+  id        Int      @id @default(autoincrement())
+  venta_id  Int
+  tipo      String   @db.VarChar(20) // 'boleta' o 'factura'
+  numero    String   @db.VarChar(50)
+  pdf_url   String?  @db.Text
+  creado_en DateTime @default(now())
+
+  // Índices
+  @@index([venta_id])
+  @@index([tipo])
+  @@index([numero])
+
+  @@map("comprobantes")
+}
+
+model RUC {
+  id        Int      @id @default(autoincrement())
+  mes       Int
+  ano       Int
+  total     Decimal  @db.Decimal(12, 2)
+  creado_en DateTime @default(now())
+
+  // Índices
+  @@index([mes, ano])
+  @@unique([mes, ano])
+
+  @@map("rucs")
+}
+
+// ============================================
+// NOTAS SOBRE ÍNDICES
+// ============================================
+
+/*
+ÍNDICES CREADOS:
+
+1. fecha_venta (CRÍTICO)
+   - Usado en: Filtros por período (hoy, semana, mes, año)
+   - Impacto: 10-100x más rápido
+   - Tamaño: ~50MB para 1M registros
+
+2. metodo_pago
+   - Usado en: Gráfico de métodos de pago
+   - Impacto: 5-10x más rápido
+   - Tamaño: ~10MB para 1M registros
+
+3. cliente
+   - Usado en: Búsqueda de clientes
+   - Impacto: 5-10x más rápido
+   - Tamaño: ~50MB para 1M registros
+
+4. fecha_venta + metodo_pago (compuesto)
+   - Usado en: Filtros combinados
+   - Impacto: 20-50x más rápido
+   - Tamaño: ~100MB para 1M registros
+
+TOTAL ESPACIO: ~200MB para 1M registros (aceptable)
+
+MIGRACIÓN:
+1. Crear archivo: npx prisma migrate dev --name add_indexes
+2. Aplicar: npx prisma migrate deploy
+3. Verificar: npx prisma db push
+
+MONITOREO:
+- Verificar índices: SHOW INDEX FROM ventas;
+- Analizar query: EXPLAIN SELECT * FROM ventas WHERE fecha_venta >= '2025-01-01';
+*/

@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id       Int     @id @default(autoincrement())
+  nombre   String
+  username String  @unique
+  password String
+  rol      String  // 'Administrador' o 'Vendedor'
+  ventas   Venta[]
+
+  @@map("usuarios")
+}
+
+model Cliente {
+  id     Int     @id @default(autoincrement())
+  nombre String  @unique
+  ventas Venta[]
+
+  @@map("clientes")
+}
+
+model Producto {
+  id            Int            @id @default(autoincrement())
+  nombre        String         @unique
+  detalleVentas DetalleVenta[]
+
+  @@map("productos")
+}
+
+model Venta {
+  id           Int            @id @default(autoincrement())
+  cliente      String
+  cliente_id   Int?
+  productos    String         @db.Text
+  precio_total Decimal        @db.Decimal(10, 2)
+  metodo_pago  String
+  fecha_venta  DateTime       @default(now())
+  usuario_id   Int?
+  clienteRel   Cliente?       @relation(fields: [cliente_id], references: [id])
+  usuarioRel   Usuario?       @relation(fields: [usuario_id], references: [id])
+  detalles     DetalleVenta[]
+
+  // ✅ ÍNDICES OPTIMIZADOS PARA REPORTES
+  // Índice para filtros por fecha (CRÍTICO)
+  @@index([fecha_venta])
+  
+  // Índice para filtros por método de pago
+  @@index([metodo_pago])
+  
+  // Índice para búsqueda por cliente
+  @@index([cliente])
+  
+  // Índice compuesto para queries comunes
+  @@index([fecha_venta, metodo_pago])
+  
+  // Índice compuesto para ordenamiento
+  @@index([fecha_venta, precio_total])
+
+  @@map("ventas")
+}
+
+model DetalleVenta {
+  id          Int      @id @default(autoincrement())
+  venta_id    Int
+  producto_id Int?
+  producto    String
+  cantidad    Int
+  precio      Decimal  @db.Decimal(10, 2)
+  venta       Venta    @relation(fields: [venta_id], references: [id], onDelete: Cascade)
+  productoRel Producto? @relation(fields: [producto_id], references: [id])
+
+  @@map("detalle_venta")
+}
