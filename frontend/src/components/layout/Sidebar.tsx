@@ -10,6 +10,7 @@ const Sidebar = ({ isOpen, toggleSidebar }: SidebarProps) => {
   const menuItems = [
     { path: '/', icon: 'fa-home', label: 'Dashboard' },
     { path: '/registrar-venta', icon: 'fa-cash-register', label: 'Registrar Venta' },
+    { path: '/almacenamiento', icon: 'fa-warehouse', label: 'Almacenamiento' },
     { path: '/reportes', icon: 'fa-chart-line', label: 'Reportes' },
     { path: '/ruc', icon: 'fa-calculator', label: 'Calcular RUC' },
   ];

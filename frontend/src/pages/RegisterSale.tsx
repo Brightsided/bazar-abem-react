@@ -2,20 +2,27 @@ import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { ventasService } from '@/services/ventasService';
+import { clientesService } from '@/services/clientesService';
 import { showSuccess, showError } from '@/utils/alerts';
 import { formatCurrency } from '@/utils/formatters';
 import ProductSearch from '@/components/forms/ProductSearch';
+import ClientSearch from '@/components/forms/ClientSearch';
+import { Almacenamiento } from '@/services/almacenamientoService';
+import { Cliente } from '@/types';
 
 const ventaSchema = z.object({
   cliente: z.string().min(1, 'El cliente es requerido'),
+  cliente_id: z.number().nullable().optional(),
   metodo_pago: z.enum(['Efectivo', 'Tarjeta De Credito/Debito', 'Yape']),
   productos: z.array(
     z.object({
       nombre: z.string().min(1, 'El nombre del producto es requerido'),
       cantidad: z.number().min(1, 'La cantidad debe ser mayor a 0'),
       precio: z.number().min(0.01, 'El precio debe ser mayor a 0'),
+      producto_id: z.number().optional(),
+      stock_disponible: z.number().optional(),
     })
   ).min(1, 'Debe agregar al menos un producto'),
 });
@@ -26,6 +33,7 @@ const RegisterSale = () => {
   const queryClient = useQueryClient();
   const [total, setTotal] = useState(0);
   const [metodoSeleccionado, setMetodoSeleccionado] = useState<'Efectivo' | 'Tarjeta De Credito/Debito' | 'Yape'>('Efectivo');
+  const [stockDisponible, setStockDisponible] = useState<{ [key: number]: number }>({});
 
   const {
     register,
@@ -34,13 +42,14 @@ const RegisterSale = () => {
     watch,
     reset,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<VentaForm>({
     resolver: zodResolver(ventaSchema),
     defaultValues: {
       cliente: 'Cliente Casual',
       metodo_pago: 'Efectivo',
-      productos: [{ nombre: '', cantidad: 1, precio: 0 }],
+      productos: [{ nombre: '', cantidad: 1, precio: 0, stock_disponible: 0 }],
     },
   });
 
@@ -51,24 +60,81 @@ const RegisterSale = () => {
 
   const productos = watch('productos');
 
-  // Calcular total
+  // Obtener lista de clientes
+  const { data: clientes = [] } = useQuery({
+    queryKey: ['clientes'],
+    queryFn: clientesService.getClientes,
+  });
+
+  // Inicializar cliente_id cuando el componente carga
   useEffect(() => {
-    const newTotal = productos.reduce(
+    if (clientes.length > 0) {
+      const clienteCasual = clientes.find(c => c.nombre.toLowerCase() === 'cliente casual');
+      if (clienteCasual) {
+        setValue('cliente_id', clienteCasual.id);
+      }
+    }
+  }, [clientes, setValue]);
+
+  // Calcular total - se actualiza cuando cambian los productos
+  useEffect(() => {
+    const currentProductos = getValues('productos');
+    const newTotal = currentProductos.reduce(
       (sum, prod) => sum + (prod.cantidad || 0) * (prod.precio || 0),
       0
     );
     setTotal(newTotal);
-  }, [productos]);
+  }, [productos, getValues]);
+
+  // Manejar selección de producto
+  const handleProductSelect = (index: number, producto: Almacenamiento) => {
+    if (producto) {
+      console.log('Producto seleccionado:', producto);
+      const precioNumerico = Number(producto.producto.precio);
+      
+      // Cargar precio automáticamente
+      setValue(`productos.${index}.precio`, precioNumerico, { shouldDirty: true, shouldTouch: true });
+      // Cargar producto_id
+      setValue(`productos.${index}.producto_id`, producto.producto.id, { shouldDirty: true, shouldTouch: true });
+      // Cargar stock disponible
+      setValue(`productos.${index}.stock_disponible`, producto.stock, { shouldDirty: true, shouldTouch: true });
+      // Guardar en estado para validación
+      setStockDisponible(prev => ({
+        ...prev,
+        [index]: producto.stock
+      }));
+      
+      // Forzar actualización del total inmediatamente
+      setTimeout(() => {
+        const currentProductos = getValues('productos');
+        const newTotal = currentProductos.reduce(
+          (sum, prod) => sum + (prod.cantidad || 0) * (prod.precio || 0),
+          0
+        );
+        setTotal(newTotal);
+      }, 0);
+    }
+  };
 
   const mutation = useMutation({
     mutationFn: ventasService.createVenta,
     onSuccess: () => {
       showSuccess('Venta registrada exitosamente');
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['ventas'] });
       reset();
       setTotal(0);
+      setStockDisponible({});
+      // Reinicializar cliente_id después del reset
+      setTimeout(() => {
+        const clienteCasual = clientes.find(c => c.nombre.toLowerCase() === 'cliente casual');
+        if (clienteCasual) {
+          setValue('cliente_id', clienteCasual.id);
+        }
+      }, 0);
     },
     onError: (error: any) => {
+      console.error('Error:', error);
       showError(error.response?.data?.message || 'Error al registrar la venta');
     },
   });
@@ -106,17 +172,18 @@ const RegisterSale = () => {
                   <i className="fas fa-user mr-2 text-blue-500"></i>
                   Cliente
                 </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    {...register('cliente')}
-                    className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300"
-                    placeholder="Nombre del cliente"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors">
-                    <i className="fas fa-chevron-right text-xs"></i>
-                  </div>
-                </div>
+                <ClientSearch
+                  value={watch('cliente')}
+                  onChange={(value) => setValue('cliente', value)}
+                  onClientSelect={(client: Cliente | null) => {
+                    if (client) {
+                      setValue('cliente_id', client.id);
+                    } else {
+                      setValue('cliente_id', null);
+                    }
+                  }}
+                  placeholder="Buscar o crear cliente..."
+                />
                 {errors.cliente && (
                   <p className="text-red-400 text-xs mt-2 flex items-center animate-pulse">
                     <i className="fas fa-exclamation-circle mr-1"></i>
@@ -158,11 +225,12 @@ const RegisterSale = () => {
                             value={productos[index]?.nombre || ''}
                             onChange={(value) => setValue(`productos.${index}.nombre`, value)}
                             placeholder="Buscar producto..."
+                            onProductSelectFull={(producto) => handleProductSelect(index, producto)}
                           />
                         </div>
                         <div className="col-span-3 md:col-span-3">
                           <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                            Cantidad
+                            Cantidad {stockDisponible[index] && <span className="text-purple-500">Máx: {stockDisponible[index]}</span>}
                           </label>
                           <input
                             type="number"
@@ -170,7 +238,14 @@ const RegisterSale = () => {
                             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 text-center"
                             placeholder="1"
                             min="1"
+                            max={stockDisponible[index] || 999}
                           />
+                          {productos[index]?.cantidad > (stockDisponible[index] || 0) && stockDisponible[index] > 0 && (
+                            <p className="text-yellow-500 text-xs mt-1 flex items-center">
+                              <i className="fas fa-exclamation-triangle mr-1"></i>
+                              Cantidad excede stock disponible
+                            </p>
+                          )}
                         </div>
                         <div className="col-span-3 md:col-span-3">
                           <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
@@ -180,7 +255,7 @@ const RegisterSale = () => {
                             type="number"
                             step="0.01"
                             {...register(`productos.${index}.precio`, { valueAsNumber: true })}
-                            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 text-center"
+                            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 text-center font-semibold bg-gray-100 dark:bg-gray-600"
                             placeholder="0.00"
                             min="0"
                           />
@@ -297,6 +372,7 @@ const RegisterSale = () => {
                   onClick={() => {
                     reset();
                     setTotal(0);
+                    setStockDisponible({});
                   }}
                   className="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
                 >

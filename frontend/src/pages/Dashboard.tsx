@@ -3,6 +3,7 @@ import { reportesService } from '@/services/reportesService';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import StatsCard from '@/components/common/StatsCard';
 import Calculator from '@/components/common/Calculator';
+import StockAlertsWidget from '@/components/common/StockAlertsWidget';
 
 const Dashboard = () => {
   const { data: stats, isLoading } = useQuery({
@@ -145,9 +146,13 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Calculadora */}
-        <div className="lg:col-span-1">
+        {/* Sidebar Derecho */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Calculadora */}
           <Calculator />
+          
+          {/* Alertas de Stock */}
+          <StockAlertsWidget />
         </div>
       </div>
     </div>

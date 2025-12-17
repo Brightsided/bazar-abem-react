@@ -21,6 +21,9 @@ const Reports = () => {
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   const [bolletaModalOpen, setBolletaModalOpen] = useState(false);
+  
+  // Estado para búsqueda en tabla
+  const [searchTerm, setSearchTerm] = useState('');
 
   // ✅ Agregar debouncing para evitar múltiples requests
   const debouncedFiltro = useDebounce(filtro, 300);
@@ -290,6 +293,21 @@ const Reports = () => {
                 {reporte?.ventas?.length || 0} registros
               </span>
             </div>
+            
+            {/* Buscador */}
+            <div className="mb-6">
+              <div className="relative">
+                <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input
+                  type="text"
+                  placeholder="Buscar por ID Cliente, Productos, Método o Fecha..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300"
+                />
+              </div>
+            </div>
+            
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -319,68 +337,93 @@ const Reports = () => {
                 </thead>
                 <tbody>
                   {reporte?.ventas && reporte.ventas.length > 0 ? (
-                    reporte.ventas.map((venta) => (
-                      <tr
-                        key={venta.id}
-                        className="border-b border-white/5 dark:border-white/5 hover:bg-white/10 dark:hover:bg-white/5 transition-colors duration-200 group"
-                      >
-                        <td className="py-4 px-4 text-sm text-gray-900 dark:text-white font-medium">
-                          <span className="flex items-center">
-                            <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 mr-3"></span>
-                            #{venta.id}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-sm text-gray-900 dark:text-white">{venta.cliente}</td>
-                        <td className="py-4 px-4 text-sm text-gray-600 dark:text-gray-400">{venta.productos}</td>
-                        <td className="py-4 px-4 text-sm">
-                          <span className="px-2 py-1 rounded-md bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold">
-                            {venta.metodo_pago}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-sm font-bold text-green-600 dark:text-green-400">
-                          {formatCurrency(Number(venta.precio_total))}
-                        </td>
-                        <td className="py-4 px-4 text-sm text-gray-600 dark:text-gray-400">
-                          <span className="px-2 py-1 rounded-md bg-gray-100 dark:bg-white/10 text-xs">
-                            {formatDate(venta.fecha_venta)}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-sm">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => {
-                                setSelectedVenta(venta);
-                                setEmailModalOpen(true);
-                              }}
-                              className="p-2 rounded-lg bg-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-500/30 transition"
-                              title="Enviar por Email"
-                            >
-                              <i className="fas fa-envelope text-sm"></i>
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedVenta(venta);
-                                setBolletaModalOpen(true);
-                              }}
-                              className="p-2 rounded-lg bg-orange-500/20 text-orange-600 dark:text-orange-400 hover:bg-orange-500/30 transition"
-                              title="Ver Boleta"
-                            >
-                              <i className="fas fa-receipt text-sm"></i>
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedVenta(venta);
-                                setWhatsappModalOpen(true);
-                              }}
-                              className="p-2 rounded-lg bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30 transition"
-                              title="Enviar por WhatsApp"
-                            >
-                              <i className="fab fa-whatsapp text-sm"></i>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                    reporte.ventas
+                      .filter((venta) => {
+                        const searchLower = searchTerm.toLowerCase();
+                        return (
+                          venta.id.toString().includes(searchLower) ||
+                          venta.cliente.toLowerCase().includes(searchLower) ||
+                          venta.productos.toLowerCase().includes(searchLower) ||
+                          venta.metodo_pago.toLowerCase().includes(searchLower) ||
+                          formatDate(venta.fecha_venta).toLowerCase().includes(searchLower)
+                        );
+                      })
+                      .map((venta) => {
+                        // Determinar color según método de pago
+                        let metodoBgColor = 'bg-blue-500/20';
+                        let metodoTextColor = 'text-blue-600 dark:text-blue-400';
+                        
+                        if (venta.metodo_pago === 'Yape') {
+                          metodoBgColor = 'bg-purple-500/20';
+                          metodoTextColor = 'text-purple-600 dark:text-purple-400';
+                        } else if (venta.metodo_pago === 'Efectivo') {
+                          metodoBgColor = 'bg-green-500/20';
+                          metodoTextColor = 'text-green-600 dark:text-green-400';
+                        }
+                        
+                        return (
+                          <tr
+                            key={venta.id}
+                            className="border-b border-white/5 dark:border-white/5 hover:bg-white/10 dark:hover:bg-white/5 transition-colors duration-200 group"
+                          >
+                            <td className="py-4 px-4 text-sm text-gray-900 dark:text-white font-medium">
+                              <span className="flex items-center">
+                                <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 mr-3"></span>
+                                #{venta.id}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-sm text-gray-900 dark:text-white">{venta.cliente}</td>
+                            <td className="py-4 px-4 text-sm text-gray-600 dark:text-gray-400">{venta.productos}</td>
+                            <td className="py-4 px-4 text-sm">
+                              <span className={`px-2 py-1 rounded-md ${metodoBgColor} ${metodoTextColor} text-xs font-semibold`}>
+                                {venta.metodo_pago}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-sm font-bold text-green-600 dark:text-green-400">
+                              {formatCurrency(Number(venta.precio_total))}
+                            </td>
+                            <td className="py-4 px-4 text-sm text-gray-600 dark:text-gray-400">
+                              <span className="px-2 py-1 rounded-md bg-gray-100 dark:bg-white/10 text-xs">
+                                {formatDate(venta.fecha_venta)}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-sm">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    setSelectedVenta(venta);
+                                    setEmailModalOpen(true);
+                                  }}
+                                  className="p-2 rounded-lg bg-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-500/30 transition"
+                                  title="Enviar por Email"
+                                >
+                                  <i className="fas fa-envelope text-sm"></i>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedVenta(venta);
+                                    setBolletaModalOpen(true);
+                                  }}
+                                  className="p-2 rounded-lg bg-orange-500/20 text-orange-600 dark:text-orange-400 hover:bg-orange-500/30 transition"
+                                  title="Ver Boleta"
+                                >
+                                  <i className="fas fa-receipt text-sm"></i>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedVenta(venta);
+                                    setWhatsappModalOpen(true);
+                                  }}
+                                  className="p-2 rounded-lg bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30 transition"
+                                  title="Enviar por WhatsApp"
+                                >
+                                  <i className="fab fa-whatsapp text-sm"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
                   ) : (
                     <tr>
                       <td colSpan={7} className="py-12 text-center">

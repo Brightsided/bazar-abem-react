@@ -11,12 +11,13 @@ datasource db {
 }
 
 model Usuario {
-  id       Int     @id @default(autoincrement())
-  nombre   String
-  username String  @unique
-  password String
-  rol      String  // 'Administrador' o 'Vendedor'
-  ventas   Venta[]
+  id                    Int                     @id @default(autoincrement())
+  nombre                String
+  username              String                  @unique
+  password              String
+  rol                   String                  // 'Administrador' o 'Vendedor'
+  ventas                Venta[]
+  movimientos_inventario MovimientoInventario[]
 
   @@map("usuarios")
 }
@@ -30,11 +31,77 @@ model Cliente {
 }
 
 model Producto {
-  id            Int            @id @default(autoincrement())
-  nombre        String         @unique
-  detalleVentas DetalleVenta[]
+  id                    Int                     @id @default(autoincrement())
+  nombre                String                  @unique
+  precio                Decimal                 @db.Decimal(10, 2) @default(0)
+  detalleVentas         DetalleVenta[]
+  almacenamiento        Almacenamiento?
+  alertas_stock         AlertaStock[]
+  movimientos_inventario MovimientoInventario[]
 
   @@map("productos")
+}
+
+model Almacenamiento {
+  id                    Int                     @id @default(autoincrement())
+  producto_id           Int                     @unique
+  stock                 Int                     @default(0)
+  stock_minimo          Int                     @default(5)
+  codigo_barras         String?                 @unique
+  fecha_creacion        DateTime                @default(now())
+  fecha_actualizacion   DateTime                @default(now()) @updatedAt
+  producto              Producto                @relation(fields: [producto_id], references: [id], onDelete: Cascade)
+  alertas_stock         AlertaStock[]
+  movimientos_inventario MovimientoInventario[]
+
+  @@index([producto_id])
+  @@index([stock])
+  @@index([codigo_barras])
+  @@map("almacenamiento")
+}
+
+model AlertaStock {
+  id                    Int                     @id @default(autoincrement())
+  almacenamiento_id     Int
+  producto_id           Int
+  tipo_alerta           String                  @default("STOCK_BAJO")
+  stock_actual          Int
+  stock_minimo          Int
+  estado                String                  @default("ACTIVA")
+  fecha_creacion        DateTime                @default(now())
+  fecha_resolucion      DateTime?
+  almacenamiento        Almacenamiento          @relation(fields: [almacenamiento_id], references: [id], onDelete: Cascade)
+  producto              Producto                @relation(fields: [producto_id], references: [id], onDelete: Cascade)
+
+  @@index([almacenamiento_id])
+  @@index([producto_id])
+  @@index([estado])
+  @@index([fecha_creacion])
+  @@map("alertas_stock")
+}
+
+model MovimientoInventario {
+  id                    Int                     @id @default(autoincrement())
+  almacenamiento_id     Int
+  producto_id           Int
+  tipo_movimiento       String                  // 'ENTRADA', 'SALIDA', 'AJUSTE'
+  cantidad              Int
+  stock_anterior        Int
+  stock_nuevo           Int
+  referencia_venta_id   Int?
+  descripcion           String?                 @db.Text
+  usuario_id            Int?
+  fecha_movimiento      DateTime                @default(now())
+  almacenamiento        Almacenamiento          @relation(fields: [almacenamiento_id], references: [id], onDelete: Cascade)
+  producto              Producto                @relation(fields: [producto_id], references: [id], onDelete: Cascade)
+  usuario               Usuario?                @relation(fields: [usuario_id], references: [id], onDelete: SetNull)
+
+  @@index([almacenamiento_id])
+  @@index([producto_id])
+  @@index([tipo_movimiento])
+  @@index([fecha_movimiento])
+  @@index([referencia_venta_id])
+  @@map("movimientos_inventario")
 }
 
 model Venta {

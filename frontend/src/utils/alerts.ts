@@ -1,5 +1,28 @@
 import Swal from 'sweetalert2';
 
+export const showAlert = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+  const iconMap = {
+    success: 'success',
+    error: 'error',
+    warning: 'warning',
+    info: 'info',
+  };
+
+  const titleMap = {
+    success: '¡Éxito!',
+    error: 'Error',
+    warning: 'Advertencia',
+    info: 'Información',
+  };
+
+  Swal.fire({
+    icon: iconMap[type],
+    title: titleMap[type],
+    text: message,
+    confirmButtonColor: '#6366f1',
+  });
+};
+
 export const showSuccess = (message: string) => {
   Swal.fire({
     icon: 'success',

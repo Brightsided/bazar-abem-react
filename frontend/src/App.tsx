@@ -9,6 +9,7 @@ import { queryClient } from './config/queryClient';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import RegisterSale from './pages/RegisterSale';
+import Almacenamiento from './pages/Almacenamiento';
 import Reports from './pages/Reports';
 import RUC from './pages/RUC';
 
@@ -25,11 +26,18 @@ function App() {
   const isDark = useThemeStore((state) => state.isDark);
 
   useEffect(() => {
+    // Inicializar autenticación desde localStorage
     initialize();
+  }, []);
+
+  useEffect(() => {
+    // Aplicar tema oscuro
     if (isDark) {
       document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
-  }, [initialize, isDark]);
+  }, [isDark]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -46,6 +54,7 @@ function App() {
           >
             <Route index element={<Dashboard />} />
             <Route path="registrar-venta" element={<RegisterSale />} />
+            <Route path="almacenamiento" element={<Almacenamiento />} />
             <Route path="reportes" element={<Reports />} />
             <Route path="ruc" element={<RUC />} />
           </Route>

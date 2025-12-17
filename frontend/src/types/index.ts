@@ -104,6 +104,54 @@ export interface AuthResponse {
 
 export interface NuevaVenta {
   cliente: string;
+  cliente_id?: number | null;
   productos: DetalleProducto[];
   metodo_pago: 'Efectivo' | 'Tarjeta De Credito/Debito' | 'Yape';
+}
+
+// Tipos para Almacenamiento
+export interface ProductoAlmacenamiento {
+  id: number;
+  nombre: string;
+  precio: number;
+}
+
+export interface Almacenamiento {
+  id: number;
+  producto_id: number;
+  stock: number;
+  stock_minimo: number;
+  codigo_barras?: string;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
+  producto: ProductoAlmacenamiento;
+}
+
+export interface AlertaStock {
+  id: number;
+  almacenamiento_id: number;
+  producto_id: number;
+  tipo_alerta: string;
+  stock_actual: number;
+  stock_minimo: number;
+  estado: 'ACTIVA' | 'RESUELTA';
+  fecha_creacion: string;
+  fecha_resolucion?: string;
+  producto: ProductoAlmacenamiento;
+}
+
+export interface MovimientoInventario {
+  id: number;
+  almacenamiento_id: number;
+  producto_id: number;
+  tipo_movimiento: 'ENTRADA' | 'SALIDA' | 'AJUSTE';
+  cantidad: number;
+  stock_anterior: number;
+  stock_nuevo: number;
+  referencia_venta_id?: number;
+  descripcion?: string;
+  usuario_id?: number;
+  fecha_movimiento: string;
+  producto: ProductoAlmacenamiento;
+  usuario?: Usuario;
 }

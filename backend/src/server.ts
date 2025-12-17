@@ -13,6 +13,7 @@ import productosRoutes from './routes/productos.js';
 import clientesRoutes from './routes/clientes.js';
 import rucRoutes from './routes/ruc.js';
 import comprobantesRoutes from './routes/comprobantes.js';
+import almacenamientoRoutes from './routes/almacenamiento.js';
 
 // Middleware
 import { errorHandler } from './middleware/errorHandler.js';
@@ -39,6 +40,7 @@ app.use('/api/productos', productosRoutes);
 app.use('/api/clientes', clientesRoutes);
 app.use('/api/ruc', rucRoutes);
 app.use('/api/comprobantes', comprobantesRoutes);
+app.use('/api/almacenamiento', almacenamientoRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

@@ -69,13 +69,27 @@ export const getVenta = async (req: AuthRequest, res: Response) => {
 
 export const createVenta = async (req: AuthRequest, res: Response) => {
   try {
-    const { cliente, productos, metodo_pago } = req.body;
+    const { cliente, cliente_id, productos, metodo_pago } = req.body;
 
     if (!cliente || !productos || !Array.isArray(productos) || productos.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Datos incompletos',
       });
+    }
+
+    // Validar stock disponible para todos los productos
+    for (const prod of productos) {
+      const almacenamiento = await prisma.almacenamiento.findUnique({
+        where: { producto_id: prod.producto_id },
+      });
+
+      if (!almacenamiento || almacenamiento.stock < prod.cantidad) {
+        return res.status(400).json({
+          success: false,
+          message: `Stock insuficiente para ${prod.nombre}. Disponible: ${almacenamiento?.stock || 0}`,
+        });
+      }
     }
 
     // Calcular total
@@ -89,22 +103,40 @@ export const createVenta = async (req: AuthRequest, res: Response) => {
       .map((p: any) => `${p.nombre} (${p.cantidad})`)
       .join(', ');
 
-    // Buscar o crear cliente
-    let clienteId = null;
-    if (cliente !== 'Cliente Casual') {
-      const clienteExistente = await prisma.cliente.findUnique({
-        where: { nombre: cliente },
-      });
-
-      if (clienteExistente) {
-        clienteId = clienteExistente.id;
-      } else {
-        const nuevoCliente = await prisma.cliente.create({
-          data: { nombre: cliente },
+    // Determinar clienteId
+    let clienteId = cliente_id || null;
+    
+    console.log('Antes de procesar - clienteId:', clienteId, 'cliente:', cliente);
+    
+    // Si no viene cliente_id pero el cliente no es "Cliente Casual", buscar o crear
+    if (!clienteId && cliente && cliente !== 'Cliente Casual') {
+      try {
+        const clienteExistente = await prisma.cliente.findUnique({
+          where: { nombre: cliente },
         });
-        clienteId = nuevoCliente.id;
+
+        if (clienteExistente) {
+          clienteId = clienteExistente.id;
+        } else {
+          const nuevoCliente = await prisma.cliente.create({
+            data: { nombre: cliente },
+          });
+          clienteId = nuevoCliente.id;
+        }
+      } catch (error: any) {
+        // Si hay error de unicidad, buscar el cliente existente
+        if (error.code === 'P2002') {
+          const clienteExistente = await prisma.cliente.findUnique({
+            where: { nombre: cliente },
+          });
+          if (clienteExistente) {
+            clienteId = clienteExistente.id;
+          }
+        }
       }
     }
+    
+    console.log('Después de procesar - clienteId final:', clienteId);
 
     // Crear venta
     const venta = await prisma.venta.create({
@@ -120,6 +152,7 @@ export const createVenta = async (req: AuthRequest, res: Response) => {
             producto: prod.nombre,
             cantidad: prod.cantidad,
             precio: prod.precio,
+            producto_id: prod.producto_id,
           })),
         },
       },
@@ -127,6 +160,62 @@ export const createVenta = async (req: AuthRequest, res: Response) => {
         detalles: true,
       },
     });
+
+    // Disminuir stock y registrar movimientos
+    for (const prod of productos) {
+      const almacenamiento = await prisma.almacenamiento.findUnique({
+        where: { producto_id: prod.producto_id },
+      });
+
+      if (almacenamiento) {
+        const stock_anterior = almacenamiento.stock;
+        const stock_nuevo = stock_anterior - prod.cantidad;
+
+        // Actualizar stock
+        await prisma.almacenamiento.update({
+          where: { id: almacenamiento.id },
+          data: { stock: stock_nuevo },
+        });
+
+        // Registrar movimiento
+        await prisma.movimientoInventario.create({
+          data: {
+            almacenamiento_id: almacenamiento.id,
+            producto_id: prod.producto_id,
+            tipo_movimiento: 'SALIDA',
+            cantidad: prod.cantidad,
+            stock_anterior,
+            stock_nuevo,
+            referencia_venta_id: venta.id,
+            descripcion: `Venta registrada - ${prod.nombre}`,
+            usuario_id: req.user!.id,
+          },
+        });
+
+        // Verificar si hay stock bajo y crear alerta si es necesario
+        if (stock_nuevo <= almacenamiento.stock_minimo) {
+          const alertaExistente = await prisma.alertaStock.findFirst({
+            where: {
+              almacenamiento_id: almacenamiento.id,
+              estado: 'ACTIVA',
+            },
+          });
+
+          if (!alertaExistente) {
+            await prisma.alertaStock.create({
+              data: {
+                almacenamiento_id: almacenamiento.id,
+                producto_id: prod.producto_id,
+                tipo_alerta: 'STOCK_BAJO',
+                stock_actual: stock_nuevo,
+                stock_minimo: almacenamiento.stock_minimo,
+                estado: 'ACTIVA',
+              },
+            });
+          }
+        }
+      }
+    }
 
     res.status(201).json({
       success: true,

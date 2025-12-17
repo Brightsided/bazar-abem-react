@@ -52,7 +52,7 @@ export const searchProductos = async (req: AuthRequest, res: Response) => {
 
 export const createProducto = async (req: AuthRequest, res: Response) => {
   try {
-    const { nombre } = req.body;
+    const { nombre, precio } = req.body;
 
     if (!nombre) {
       return res.status(400).json({
@@ -62,7 +62,10 @@ export const createProducto = async (req: AuthRequest, res: Response) => {
     }
 
     const producto = await prisma.producto.create({
-      data: { nombre },
+      data: { 
+        nombre,
+        precio: precio ? parseFloat(precio) : 0,
+      },
     });
 
     res.status(201).json(producto);
@@ -77,6 +80,53 @@ export const createProducto = async (req: AuthRequest, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Error al crear producto',
+    });
+  }
+};
+
+export const updateProducto = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { nombre, precio } = req.body;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de producto requerido',
+      });
+    }
+
+    // Verificar que el producto existe
+    const producto = await prisma.producto.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!producto) {
+      return res.status(404).json({
+        success: false,
+        message: 'Producto no encontrado',
+      });
+    }
+
+    // Actualizar producto
+    const productoActualizado = await prisma.producto.update({
+      where: { id: parseInt(id) },
+      data: {
+        ...(nombre && { nombre }),
+        ...(precio !== undefined && { precio: parseFloat(precio) }),
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Producto actualizado exitosamente',
+      producto: productoActualizado,
+    });
+  } catch (error) {
+    console.error('UpdateProducto error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar producto',
     });
   }
 };

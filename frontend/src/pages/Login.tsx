@@ -20,6 +20,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const setUser = useAuthStore((state) => state.setUser);
+  const setToken = useAuthStore((state) => state.setToken);
 
   const {
     register,
@@ -34,6 +35,7 @@ const Login = () => {
     try {
       const response = await authService.login(data);
       setUser(response.user);
+      setToken(response.token);
       navigate('/');
     } catch (error: any) {
       showError(error.response?.data?.message || 'Error al iniciar sesión');

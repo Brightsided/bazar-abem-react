@@ -1,258 +1,220 @@
-# 🛒 Bazar Abem - Sistema de Ventas
+# 🛒 Bazar Abem - Sistema de Gestión de Ventas
 
-Sistema de gestión de ventas moderno desarrollado con React, TypeScript, Node.js y MySQL.
+[![GitHub License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Brightsided/bazar-abem-react/blob/main/docs/LICENSE)
+[![Node.js](https://img.shields.io/badge/node.js-18+-green.svg)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/react-18.2+-blue.svg)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/typescript-5.3+-blue.svg)](https://www.typescriptlang.org/)
+[![MySQL](https://img.shields.io/badge/mysql-8.0+-blue.svg)](https://www.mysql.com/)
 
-## 📋 Características
+Sistema moderno y completo para la gestión de ventas, clientes, productos, reportes y más, desarrollado con **React**, **Node.js**, **TypeScript** y **MySQL**.
 
-- ✅ Registro de ventas con múltiples productos
-- 📊 Dashboard con estadísticas en tiempo real
-- 📈 Reportes dinámicos con gráficos interactivos
-- 🧾 Generación de boletas y facturas en PDF
-- 📧 Envío de comprobantes por email
-- 💰 Cálculo automático de RUC
-- 🔐 Sistema de autenticación con JWT
-- 🌓 Tema claro/oscuro
-- 📱 Diseño responsive
-- 🧮 Calculadora integrada
+## ✨ Características Principales
 
-## 🛠️ Tecnologías
+- 🔐 **Autenticación segura** con JWT
+- 📊 **Dashboard interactivo** con gráficos en tiempo real
+- 🛍️ **Gestión de productos** con búsqueda avanzada
+- 👥 **Gestión de clientes** con historial de compras
+- 💳 **Registro de ventas** con cálculo automático
+- 📈 **Reportes detallados** por período, vendedor y tipo de comprobante
+- 📄 **Generación de PDFs** (Facturas y Boletas)
+- 🔲 **Códigos QR** automáticos en comprobantes
+- 📧 **Envío de comprobantes por email**
+- 💬 **Integración WhatsApp** para notificaciones
+- 🎨 **Interfaz moderna** con Tailwind CSS
+- 📱 **Responsive design** para todos los dispositivos
 
-### Frontend
-- React 18 + TypeScript
-- Vite
-- React Router v6
-- TanStack Query (React Query)
-- Zustand (Estado global)
-- Tailwind CSS
-- ApexCharts
-- SweetAlert2
-- React Hook Form + Zod
+## 🏗️ Arquitectura del Proyecto
+
+```
+bazar-abem-react/
+├── backend/                    # API REST (Node.js + Express)
+│   ├── src/
+│   │   ├── config/            # Configuración (Base de datos)
+│   │   ├── controllers/        # Lógica de negocio
+│   │   ├── middleware/         # Autenticación, manejo de errores
+│   │   ├── routes/             # Definición de endpoints
+│   │   ├── services/           # Servicios (Email, PDF, QR)
+│   │   └── server.ts           # Servidor principal
+│   ├── prisma/
+│   │   ├── schema.prisma       # Esquema de base de datos
+│   │   └── seed.ts             # Datos iniciales
+│   ├── package.json
+│   └── tsconfig.json
+│
+├── frontend/                   # Aplicación React
+│   ├── src/
+│   │   ├── components/         # Componentes React
+│   │   ├── pages/              # Páginas principales
+│   │   ├── services/           # API calls
+│   │   ├── store/              # Estado global (Zustand)
+│   │   ├── types/              # Tipos TypeScript
+│   │   ├── utils/              # Funciones auxiliares
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── tailwind.config.js
+│
+├── docs/                       # Documentación completa
+├── database-init.sql           # Script de inicialización
+└── .gitignore
+```
+
+## 🛠️ Tecnologías Utilizadas
 
 ### Backend
-- Node.js + Express + TypeScript
-- Prisma ORM
-- MySQL
-- JWT (Autenticación)
-- bcrypt (Hash de contraseñas)
-- PDFKit (Generación de PDFs)
-- QRCode (Códigos QR)
-- Nodemailer (Envío de emails)
+- **Express.js** - Framework web
+- **Prisma** - ORM para base de datos
+- **MySQL** - Base de datos relacional
+- **JWT** - Autenticación
+- **Nodemailer** - Envío de emails
+- **PDFKit** - Generación de PDFs
+- **QRCode** - Códigos QR
+- **bcrypt** - Hash de contraseñas
+- **Helmet** - Seguridad HTTP
+- **CORS** - Control de acceso
 
-## 📦 Instalación
+### Frontend
+- **React 18** - Librería de UI
+- **TypeScript** - Tipado estático
+- **Vite** - Bundler rápido
+- **Tailwind CSS** - Estilos
+- **React Router** - Navegación
+- **Zustand** - Estado global
+- **React Query** - Gestión de datos
+- **React Hook Form** - Manejo de formularios
+- **Recharts** - Gráficos
+- **Lucide React** - Iconos
+- **SweetAlert2** - Alertas modernas
 
-### Prerrequisitos
+## 📋 Requisitos Previos
 
-- Node.js 18+ 
-- MySQL 8+
-- npm o yarn
+- **Node.js** 18+
+- **npm** o **yarn**
+- **MySQL** 8.0+
+- **Git**
 
-### 1. Clonar el repositorio
+## 🚀 Instalación Rápida
+
+### 1️⃣ Clonar el repositorio
 
 ```bash
-git clone <url-del-repositorio>
+git clone https://github.com/Brightsided/bazar-abem-react.git
 cd bazar-abem-react
 ```
 
-### 2. Configurar Backend
+### 2️⃣ Configurar Backend
 
 ```bash
 cd backend
+
+# Instalar dependencias
 npm install
+
+# Copiar archivo de ejemplo
+cp .env.example .env
+
+# Editar .env con tus datos de base de datos
+# DATABASE_URL="mysql://usuario:contraseña@localhost:3306/bazar_abem"
+
+# Ejecutar migraciones
+npm run prisma:migrate
+
+# Poblar datos iniciales (opcional)
+npm run prisma:seed
+
+# Iniciar servidor de desarrollo
+npm run dev
 ```
 
-Crear archivo `.env` basado en `.env.example`:
+El servidor estará disponible en: `http://localhost:3000`
+
+### 3️⃣ Configurar Frontend
+
+```bash
+cd ../frontend
+
+# Instalar dependencias
+npm install
+
+# Copiar archivo de ejemplo
+cp .env.example .env
+
+# Editar .env si es necesario (configurar URL de API)
+# VITE_API_URL=http://localhost:3000/api
+
+# Iniciar servidor de desarrollo
+npm run dev
+```
+
+La aplicación estará disponible en: `http://localhost:5173`
+
+## 📚 Scripts Disponibles
+
+### Backend
+
+```bash
+npm run dev              # Desarrollar con watch
+npm run build            # Compilar a JavaScript
+npm run start            # Ejecutar versión compilada
+npm run prisma:migrate   # Ejecutar migraciones pendientes
+npm run prisma:studio    # Abrir Prisma Studio
+npm run prisma:seed      # Poblar base de datos
+npm run prisma:reset     # Resetear base de datos
+npm run create-admin     # Crear usuario administrador
+```
+
+### Frontend
+
+```bash
+npm run dev              # Desarrollar con Vite
+npm run build            # Compilar para producción
+npm run lint             # Verificar código
+npm run preview          # Previsualizar build
+```
+
+## 👤 Credenciales de Acceso
+
+Después de ejecutar las migraciones y seed, puedes acceder con:
+
+- **Usuario:** `admin`
+- **Contraseña:** (Ver `docs/USUARIOS_DB.TXT`)
+
+## 🔧 Configuración de Variables de Entorno
+
+### Backend (.env)
 
 ```env
 # Database
-DATABASE_URL="mysql://root:@localhost:3306/bazar_abem"
-
-# JWT
-JWT_SECRET=tu_secret_key_super_segura_aqui
-JWT_EXPIRES_IN=7d
-JWT_REFRESH_SECRET=tu_refresh_secret_aqui
-JWT_REFRESH_EXPIRES_IN=30d
+DATABASE_URL="mysql://usuario:contraseña@localhost:3306/bazar_abem"
 
 # Server
 PORT=3000
 NODE_ENV=development
 
-# SMTP (Gmail ejemplo)
+# JWT
+JWT_SECRET=tu_secreto_muy_seguro_aqui
+
+# Email (SMTP)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_ENCRYPTION=tls
-SMTP_USERNAME=tu_email@gmail.com
-SMTP_PASSWORD=tu_password_de_aplicacion
-SMTP_FROM_EMAIL=tu_email@gmail.com
-SMTP_FROM_NAME=Bazar Abem
+SMTP_USER=tu-email@gmail.com
+SMTP_PASS=tu-contraseña-app
+SMTP_FROM=tu-email@gmail.com
 
-# Timezone
-TZ=America/Lima
+# Frontend URL
+FRONTEND_URL=http://localhost:5173
 ```
 
-### 3. Configurar Base de Datos
-
-Crear la base de datos:
-
-```bash
-mysql -u root -p
-CREATE DATABASE bazar_abem CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-EXIT;
-```
-
-O usar el script SQL incluido:
-
-```bash
-mysql -u root -p < database-init.sql
-```
-
-Ejecutar migraciones de Prisma:
-
-```bash
-npx prisma generate
-npx prisma migrate dev --name init
-```
-
-Poblar la base de datos con datos iniciales:
-
-```bash
-npx tsx prisma/seed.ts
-```
-
-### 4. Configurar Frontend
-
-```bash
-cd ../frontend
-npm install
-```
-
-Crear archivo `.env` basado en `.env.example`:
+### Frontend (.env)
 
 ```env
 VITE_API_URL=http://localhost:3000/api
 VITE_APP_NAME=Bazar Abem
 ```
 
-## 🚀 Ejecución
-
-### Modo Desarrollo
-
-**Terminal 1 - Backend:**
-```bash
-cd backend
-npm run dev
-```
-
-**Terminal 2 - Frontend:**
-```bash
-cd frontend
-npm run dev
-```
-
-La aplicación estará disponible en:
-- Frontend: http://localhost:5173
-- Backend: http://localhost:3000
-- API Health: http://localhost:3000/health
-
-### Modo Producción
-
-**Backend:**
-```bash
-cd backend
-npm run build
-npm start
-```
-
-**Frontend:**
-```bash
-cd frontend
-npm run build
-npm run preview
-```
-
-## 👤 Credenciales de Acceso
-
-Después de ejecutar el seed, puedes acceder con:
-
-**Administrador:**
-- Usuario: `admin`
-- Contraseña: `admin123`
-
-**Vendedor:**
-- Usuario: `vendedor`
-- Contraseña: `vendedor123`
-
-## 📁 Estructura del Proyecto
-
-```
-bazar-abem-react/
-├── backend/
-│   ├── prisma/
-│   │   ├── schema.prisma      # Esquema de base de datos
-│   │   └── seed.ts            # Datos iniciales
-│   ├── scripts/
-│   │   └── hash-password.js   # Utilidad para hashear contraseñas
-│   ├── src/
-│   │   ├── config/
-│   │   │   └── database.ts    # Configuración de Prisma
-│   │   ├── controllers/       # Controladores de rutas
-│   │   ├── middleware/        # Middleware (auth, errors)
-│   │   ├── routes/            # Definición de rutas
-│   │   ├── services/          # Servicios (PDF, Email, QR)
-│   │   └── server.ts          # Servidor Express
-│   ├── .env.example
-│   ├── package.json
-│   └── tsconfig.json
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── common/        # Componentes reutilizables
-│   │   │   ├── forms/         # Formularios
-│   │   │   └── layout/        # Layout (Sidebar, Header)
-│   │   ├── pages/             # Páginas principales
-│   │   ├── services/          # Servicios API
-│   │   ├── store/             # Estado global (Zustand)
-│   │   ├── types/             # Tipos TypeScript
-│   │   ├── utils/             # Utilidades
-│   │   ├── App.tsx
-│   │   ├── main.tsx
-│   │   └── index.css
-│   ├── .env.example
-│   ├── index.html
-│   ├── package.json
-│   ├── tailwind.config.js
-│   ├── vite.config.ts
-│   └── tsconfig.json
-│
-├── .gitignore
-├── database-init.sql
-├── prompt.md
-└── README.md
-```
-
-## 🔧 Scripts Disponibles
-
-### Backend
-
-```bash
-npm run dev          # Modo desarrollo con hot reload
-npm run build        # Compilar TypeScript
-npm start            # Ejecutar versión compilada
-npm run prisma:generate  # Generar cliente Prisma
-npm run prisma:migrate   # Ejecutar migraciones
-npm run prisma:studio    # Abrir Prisma Studio
-```
-
-### Frontend
-
-```bash
-npm run dev          # Modo desarrollo
-npm run build        # Build para producción
-npm run preview      # Preview del build
-npm run lint         # Ejecutar ESLint
-```
-
-## 📊 API Endpoints
+## 📊 Endpoints Principales de la API
 
 ### Autenticación
 - `POST /api/auth/login` - Iniciar sesión
@@ -260,119 +222,95 @@ npm run lint         # Ejecutar ESLint
 - `GET /api/auth/me` - Obtener usuario actual
 
 ### Ventas
+- `POST /api/ventas` - Registrar venta
 - `GET /api/ventas` - Listar ventas
-- `GET /api/ventas/:id` - Obtener venta por ID
-- `POST /api/ventas` - Crear venta
-- `PUT /api/ventas/:id` - Actualizar venta
-- `DELETE /api/ventas/:id` - Eliminar venta
-
-### Reportes
-- `GET /api/reportes/dashboard` - Estadísticas del dashboard
-- `GET /api/reportes/ventas` - Reportes con filtros
-- `GET /api/reportes/metodos-pago` - Estadísticas de métodos de pago
-- `GET /api/reportes/ranking-usuarios` - Ranking de vendedores
+- `GET /api/ventas/:id` - Obtener detalle de venta
 
 ### Productos
 - `GET /api/productos` - Listar productos
-- `GET /api/productos/search?q=...` - Buscar productos
 - `POST /api/productos` - Crear producto
+- `PUT /api/productos/:id` - Actualizar producto
 
 ### Clientes
 - `GET /api/clientes` - Listar clientes
 - `POST /api/clientes` - Crear cliente
+- `GET /api/clientes/:id` - Obtener cliente
 
-### RUC
-- `POST /api/ruc/calcular` - Calcular RUC
+### Reportes
+- `GET /api/reportes/ventas` - Reporte de ventas
+- `GET /api/reportes/productos` - Reporte de productos
+- `GET /api/reportes/clientes` - Reporte de clientes
 
-### Comprobantes
-- `GET /api/comprobantes/:id/pdf?tipo=boleta|factura` - Generar PDF
-- `POST /api/comprobantes/:id/email` - Enviar por email
+## 📖 Documentación
 
-## 🔐 Configuración de Email (Gmail)
+Para más información, consulta la documentación en la carpeta `docs/`:
 
-Para usar Gmail como servidor SMTP:
-
-1. Habilitar verificación en 2 pasos en tu cuenta de Gmail
-2. Generar una contraseña de aplicación:
-   - Ve a: https://myaccount.google.com/apppasswords
-   - Selecciona "Correo" y "Otro (nombre personalizado)"
-   - Copia la contraseña generada
-3. Usa esa contraseña en `SMTP_PASSWORD` del archivo `.env`
+- [README.md](./docs/README.md) - Documentación completa
+- [ESTRUCTURA-PROYECTO.md](./docs/ESTRUCTURA-PROYECTO.md) - Estructura del proyecto
+- [INICIO-RAPIDO.md](./docs/INICIO-RAPIDO.md) - Guía de inicio rápido
+- [PERSONALIZACION.md](./docs/PERSONALIZACION.md) - Personalización del sistema
 
 ## 🐛 Solución de Problemas
 
-### Error de instalación del frontend (RESUELTO)
+### Error de conexión a base de datos
+- Verifica que MySQL esté ejecutándose
+- Comprueba las credenciales en `.env`
+- Asegúrate de que la base de datos existe
 
-Si encuentras un error con `apexcharts` durante la instalación:
+### Puerto ya en uso
+- Backend: `lsof -i :3000` (macOS/Linux) o `netstat -ano | findstr :3000` (Windows)
+- Frontend: `lsof -i :5173` (macOS/Linux)
 
-```bash
-npm error ERESOLVE unable to resolve dependency tree
-```
-
-**Solución**: Este problema ya está corregido en el `package.json`. Si aún lo ves:
-
-```bash
-cd frontend
-rm -rf node_modules package-lock.json
-npm install
-```
-
-Ver [SOLUCION-INSTALACION.md](SOLUCION-INSTALACION.md) para más detalles.
-
-### Error de conexión a MySQL
-
-```bash
-# Verificar que MySQL esté corriendo
-mysql --version
-mysql -u root -p
-
-# Si hay problemas de conexión, verifica el DATABASE_URL en .env
-```
-
-### Error de Prisma
-
-```bash
-# Regenerar cliente Prisma
-npx prisma generate
-
-# Resetear base de datos (¡cuidado, borra todos los datos!)
-npx prisma migrate reset
-```
-
-### Puerto en uso
-
-```bash
-# Cambiar puerto en backend/.env
-PORT=3001
-
-# Cambiar puerto en frontend (vite.config.ts)
-server: { port: 5174 }
-```
-
-## 📝 Notas Importantes
-
-- La zona horaria está configurada para `America/Lima` (Perú)
-- Los precios están en Soles Peruanos (S/)
-- Las contraseñas se hashean con bcrypt (10 rounds)
-- Los tokens JWT expiran en 7 días por defecto
-- Los PDFs incluyen códigos QR para verificación
+### Errores de compilación
+- Elimina `node_modules` y `.next`/`dist`
+- Ejecuta `npm install` nuevamente
+- Limpia la caché: `npm cache clean --force`
 
 ## 🤝 Contribuir
 
-1. Fork el proyecto
+Las contribuciones son bienvenidas. Por favor:
+
+1. Fork el repositorio
 2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
 3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
 4. Push a la rama (`git push origin feature/AmazingFeature`)
 5. Abre un Pull Request
 
-## 📄 Licencia
+Para más detalles, consulta [CONTRIBUTING.md](./docs/CONTRIBUTING.md)
 
-Este proyecto está bajo la Licencia MIT.
+## 📝 Licencia
+
+Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE](./docs/LICENSE) para detalles.
 
 ## 👨‍💻 Autor
 
 **Bazar Abem**
 
+- GitHub: [@Brightsided](https://github.com/Brightsided)
+
+## 📞 Soporte
+
+Si encuentras problemas o tienes preguntas:
+
+1. Consulta la documentación en `docs/`
+2. Abre un issue en GitHub
+3. Contacta al equipo de desarrollo
+
+## 🎯 Hoja de Ruta
+
+- ✅ Sistema de ventas básico
+- ✅ Gestión de clientes
+- ✅ Reportes
+- ✅ Generación de PDFs
+- ✅ Integración de email
+- ⏳ Integración con sistemas de pago
+- ⏳ Aplicación móvil
+- ⏳ API GraphQL
+
 ---
 
-**¡Gracias por usar Bazar Abem! 🎉**
+**Última actualización:** Diciembre 2025
+
+**Status:** ✅ En producción
+
+¡Gracias por usar Bazar Abem! 🙏
