@@ -12,6 +12,7 @@ import RegisterSale from './pages/RegisterSale';
 import Almacenamiento from './pages/Almacenamiento';
 import Reports from './pages/Reports';
 import RUC from './pages/RUC';
+import CierreCaja from './pages/CierreCaja';
 
 // Layout
 import Layout from './components/layout/Layout';
@@ -57,6 +58,7 @@ function App() {
             <Route path="almacenamiento" element={<Almacenamiento />} />
             <Route path="reportes" element={<Reports />} />
             <Route path="ruc" element={<RUC />} />
+            <Route path="cierre-caja" element={<CierreCaja />} />
           </Route>
         </Routes>
       </BrowserRouter>

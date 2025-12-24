@@ -1,0 +1,504 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                    CIERRE DE CAJA - GUÍA VISUAL COMPLETA                       ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════════════════════
+1. FLUJO GENERAL DEL CIERRE DE CAJA
+═══════════════════════════════════════════════════════════════════════════════════
+
+                              ┌─────────────────┐
+                              │  INICIO DEL DÍA │
+                              │  (08:00 AM)     │
+                              └────────┬────────┘
+                                       │
+                                       ▼
+                        ┌──────────────────────────┐
+                        │  VENDEDOR ABRE CAJA      │
+                        │  - Presiona "Abrir Caja" │
+                        │  - Sistema registra hora │
+                        └────────────┬─────────────┘
+                                     │
+                                     ▼
+                    ┌────────────────────────────────┐
+                    │  DURANTE EL DÍA                │
+                    │  - Registra ventas             │
+                    │  - Recibe pagos                │
+                    │  - Genera comprobantes         │
+                    │  (Múltiples transacciones)     │
+                    └────────────┬───────────────────┘
+                                 │
+                                 ▼
+                    ┌────────────────────────────────┐
+                    │  FINAL DEL DÍA (06:00 PM)      │
+                    │  - Vendedor solicita cierre    │
+                    │  - Sistema calcula totales     │
+                    └────────────┬───────────────────┘
+                                 │
+                                 ▼
+                    ┌────────────────────────────────┐
+                    │  VENDEDOR CUENTA DINERO        │
+                    │  - Cuenta billetes y monedas   │
+                    │  - Ingresa cantidad en sistema │
+                    └────────────┬───────────────────┘
+                                 │
+                                 ▼
+                    ┌────────────────────────────────┐
+                    │  SISTEMA CALCULA DIFERENCIA    │
+                    │  - Compara esperado vs real    │
+                    │  - Identifica discrepancias    │
+                    └────────────┬───────────────────┘
+                                 │
+                    ┌────────────┴────────────┐
+                    │                         │
+                    ▼                         ▼
+        ┌──────────────────────┐  ┌──────────────────────┐
+        │  DIFERENCIA = 0      │  │  DIFERENCIA ≠ 0      │
+        │  ✓ CUADRA PERFECTO   │  │  ⚠️ REQUIERE NOTA    │
+        └──────────┬───────────┘  └──────────┬───────────┘
+                   │                         │
+                   └────────────┬────────────┘
+                                │
+                                ▼
+                    ┌────────────────────────────────┐
+                    │  SUPERVISOR REVISA Y APRUEBA   │
+                    │  - Revisa cierre               │
+                    │  - Aprueba o rechaza           │
+                    │  - Registra en historial       │
+                    └────────────┬───────────────────┘
+                                 │
+                                 ▼
+                    ┌────────────────────────────────┐
+                    │  CIERRE COMPLETADO             │
+                    │  - Caja cerrada                │
+                    │  - Dinero asegurado            │
+                    │  - Reporte generado            │
+                    └────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+2. ESTRUCTURA DE DATOS
+═══════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          TABLA: cierres_caja                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id                      INT (PK)                                            │
+│ fecha_cierre            DATETIME                                            │
+│ fecha_apertura          DATETIME                                            │
+│ usuario_id              INT (FK → usuarios)                                 │
+│ estado                  VARCHAR (ABIERTO, CERRADO, ANULADO)                 │
+│ total_ventas            DECIMAL(10,2)                                       │
+│ total_efectivo_esperado DECIMAL(10,2)                                       │
+│ total_tarjeta           DECIMAL(10,2)                                       │
+│ total_yape              DECIMAL(10,2)                                       │
+│ dinero_real_efectivo    DECIMAL(10,2)                                       │
+│ diferencia              DECIMAL(10,2)                                       │
+│ notas                   TEXT                                                │
+│ aprobado_por            INT (FK → usuarios)                                 │
+│ fecha_aprobacion        DATETIME                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      TABLA: detalle_cierre_caja                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ id                      INT (PK)                                            │
+│ cierre_caja_id          INT (FK → cierres_caja)                             │
+│ metodo_pago             VARCHAR (Efectivo, Tarjeta, Yape)                   │
+│ cantidad_transacciones  INT                                                 │
+│ monto_total             DECIMAL(10,2)                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+3. EJEMPLO PRÁCTICO COMPLETO
+═══════════════════════════════════════════════════════════════════════════════════
+
+VENDEDOR: Juan Pérez
+FECHA: 15/01/2025
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ DURANTE EL DÍA - VENTAS REGISTRADAS                                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ Venta #1:  S/. 50.00   (Efectivo)                                          │
+│ Venta #2:  S/. 100.00  (Tarjeta)                                           │
+│ Venta #3:  S/. 75.00   (Efectivo)                                          │
+│ Venta #4:  S/. 200.00  (Yape)                                              │
+│ Venta #5:  S/. 125.00  (Efectivo)                                          │
+│ Venta #6:  S/. 150.00  (Tarjeta)                                           │
+│ Venta #7:  S/. 50.00   (Yape)                                              │
+│ Venta #8:  S/. 200.00  (Efectivo)                                          │
+│ Venta #9:  S/. 100.00  (Tarjeta)                                           │
+│ Venta #10: S/. 50.00   (Efectivo)                                          │
+│                                                                             │
+│ TOTAL VENTAS: S/. 1,100.00                                                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ RESUMEN POR MÉTODO DE PAGO                                                 │
+├───────────────────────────────────────────────────���─────────────────────────┤
+│                                                                             │
+│ 💵 EFECTIVO:                                                               │
+│    Venta #1:  S/. 50.00                                                    │
+│    Venta #3:  S/. 75.00                                                    │
+│    Venta #5:  S/. 125.00                                                   │
+│    Venta #8:  S/. 200.00                                                   │
+│    Venta #10: S/. 50.00                                                    │
+│    ─────────────────────                                                   │
+│    TOTAL:     S/. 500.00  (5 transacciones)                                │
+│                                                                             │
+│ 💳 TARJETA:                                                                │
+│    Venta #2:  S/. 100.00                                                   │
+│    Venta #6:  S/. 150.00                                                   │
+���    Venta #9:  S/. 100.00                                                   │
+│    ─────────────────────                                                   │
+│    TOTAL:     S/. 350.00  (3 transacciones)                                │
+│                                                                             │
+│ 📱 YAPE:                                                                   │
+│    Venta #4:  S/. 200.00                                                   │
+│    Venta #7:  S/. 50.00                                                    │
+│    ─────────────────────                                                   │
+│    TOTAL:     S/. 250.00  (2 transacciones)                                │
+│                                                                             │
+│ ═════════════════════════════════════════════════════════════════════════  │
+│ TOTAL GENERAL: S/. 1,100.00 (10 transacciones)                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CIERRE DE CAJA - RECONCILIACIÓN                                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ DINERO ESPERADO (según sistema):                                           │
+│ ├─ Efectivo:  S/. 500.00                                                   │
+│ ├─ Tarjeta:   S/. 350.00  (no se cuenta físicamente)                       │
+│ └─ Yape:      S/. 250.00  (no se cuenta físicamente)                       │
+│                                                                             │
+│ DINERO REAL CONTADO (por vendedor):                                        │
+│ └─ Efectivo:  S/. 520.00  ← Juan cuenta físicamente                        │
+│                                                                             │
+│ DIFERENCIA:                                                                │
+│ S/. 520.00 - S/. 500.00 = +S/. 20.00 (SOBRANTE)                            │
+│                                                                             │
+│ NOTAS DEL VENDEDOR:                                                        │
+│ "Cliente en Venta #5 dio propina de S/. 20"                                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ APROBACIÓN DEL SUPERVISOR                                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ Supervisor: María García                                                   │
+│ Decisión: ✅ APROBADO                                                      │
+│ Razón: "Propina registrada correctamente"                                  │
+│ Fecha: 15/01/2025 18:30                                                    │
+│                                                                             │
+│ ESTADO FINAL: CERRADO Y APROBADO ✅                                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+4. TIPOS DE DISCREPANCIAS
+═══════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CASO 1: CIERRE PERFECTO ✅                                                 │
+├────────────────────────────────────��────────────────────────────────────────┤
+│                                                                             │
+│ Dinero Esperado:  S/. 500.00                                               │
+│ Dinero Real:      S/. 500.00                                               │
+│ ─────────────────────────────                                              │
+│ Diferencia:       S/. 0.00                                                 │
+│                                                                             │
+│ ✓ TODO CUADRA PERFECTAMENTE                                                │
+│ ✓ NO REQUIERE APROBACIÓN ESPECIAL                                          │
+│ ✓ CIERRE EXITOSO                                                           │
+│                                                                             │
+└──────────────────────────────────────────────────────────────���──────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CASO 2: SOBRANTE (POSITIVO) 📈                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ Dinero Esperado:  S/. 500.00                                               │
+│ Dinero Real:      S/. 520.00                                               │
+│ ─────────────────────────────                                              │
+│ Diferencia:       +S/. 20.00                                               │
+│                                                                             │
+│ ⚠️ SOBRANTE DETECTADO                                                      │
+│                                                                             │
+│ Posibles razones:                                                          │
+│ • Cliente dio propina                                                      │
+│ • Error en cambio (dio más dinero)                                         │
+│ • Dinero de otra fuente                                                    │
+│ • Venta no registrada                                                      │
+│                                                                             │
+│ Acción: Vendedor agrega nota explicativa                                   │
+│ Supervisor: Revisa y aprueba                                               │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CASO 3: FALTANTE (NEGATIVO) 📉                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ Dinero Esperado:  S/. 500.00                                               │
+│ Dinero Real:      S/. 480.00                                               │
+│ ─────────────────────────────                                              │
+│ Diferencia:       -S/. 20.00                                               │
+│                                                                             │
+│ ⚠️ FALTANTE DETECTADO                                                      │
+│                                                                             │
+│ Posibles razones:                                                          │
+│ • Error en cambio (dio menos dinero)                                       │
+│ • Venta registrada pero no cobrada                                         │
+│ • Dinero perdido                                                           │
+│ • Dinero robado                                                            │
+│                                                                             │
+│ Acción: Vendedor agrega nota explicativa                                   │
+│ Supervisor: Investiga y aprueba                                            │
+│ Seguimiento: Se registra patrón de discrepancias                           │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+════════════════════════════════════════════���══════════════════════════════════════
+5. INTERFAZ DE USUARIO - PANTALLAS
+═══════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PANTALLA 1: ESTADO DE CAJA                                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  🏦 CIERRE DE CAJA                                                         │
+│  ──────────────────────────���──────────────────────────────────────────     │
+│                                                                             │
+│  Estado: 🟢 ABIERTA                                                        │
+│  Abierta desde: Hoy 08:00 AM                                               │
+│  Vendedor: Juan Pérez                                                      │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │ [CERRAR CAJA]                                                       │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PANTALLA 2: RESUMEN DEL DÍA                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  📊 RESUMEN DEL DÍA                                                        │
+│  ─────────────────────────────────────────────────────────────────────     │
+│                                                                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │ Total Ventas │  │ Total Ingr.  │  │ Efectivo Esp.│  │ Otros Métod. │  │
+│  │     25       │  │  S/. 1,250   │  │  S/. 500     │  │  S/. 750     │  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘  │
+│                                                                             │
+│  💵 EFECTIVO: S/. 500.00                                                   │
+│  💳 TARJETA: S/. 600.00                                                    │
+│  📱 YAPE: S/. 150.00                                                       │
+│                                                                             │
+└────────────────────────────────────────────────��────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PANTALLA 3: MODAL CERRAR CAJA                                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ╔═════════════════════════════════════════════════════════════════════╗  │
+│  ║ 🔒 CERRAR CAJA                                                  ✕  ║  │
+│  ╠═════════════════════════════════════════════════════════════════════╣  │
+│  ║                                                                     ║  │
+│  ║ Dinero Esperado (Efectivo):                                        ║  │
+│  ║ S/. 500.00                                                         ║  │
+│  ║                                                                     ║  │
+│  ║ Dinero Real Contado (S/.):                                         ║  │
+│  ║ ┌─────────────────────────────────────────────────────────────┐   ║  │
+│  ║ │ S/. [_____________]                                         │   ║  │
+│  ║ └─────────────────────────────────────────────────────────────┘   ║  │
+│  ║                                                                     ║  │
+│  ║ Diferencia: +S/. 20.00 ⚠️                                          ║  │
+│  ║                                                                     ║  │
+│  ║ Notas (Opcional):                                                  ║  │
+│  ║ ┌─────────────────────────────────────────────────────────────┐   ║  │
+│  ║ │ Cliente dio propina de S/. 20                               │   ║  │
+│  ║ └─────────────────────────────────────────────────────────────┘   ║  │
+│  ║                                                                     ║  │
+│  ║ [CANCELAR]  [CONFIRMAR CIERRE]                                    ║  │
+│  ║                                                                     ║  │
+│  ╚═════════════════════════════════════════════════════════════════════╝  │
+│                                                                             │
+└────��────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PANTALLA 4: RESULTADO DEL CIERRE                                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ✅ CIERRE COMPLETADO                                                      │
+│  ─────────────────────────────────────────────────────────────────────     │
+│                                                                             │
+│  Dinero Esperado:    S/. 500.00                                            │
+│  Dinero Real:        S/. 520.00                                            │
+│  Diferencia:         +S/. 20.00 ⚠️                                         │
+│                                                                             │
+│  RESUMEN GENERAL:                                                          │
+│  • Total Ventas: S/. 1,250.00                                              │
+│  • Efectivo: S/. 500.00                                                    │
+│  • Tarjeta: S/. 600.00                                                     │
+│  • Yape: S/. 150.00                                                        │
+│                                                                             │
+│  Estado: PENDIENTE DE APROBACIÓN                                           │
+│                                                                             │
+│  [DESCARGAR REPORTE]  [CERRAR]                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+6. PERMISOS Y ROLES
+═══════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ VENDEDOR                                                                    │
+├───────────────────────────────────────���─────────────────────────────────────┤
+│ ✅ Abrir su caja                                                            │
+│ ✅ Registrar ventas                                                         │
+│ ✅ Cerrar su caja                                                           │
+│ ✅ Ver su historial de cierres                                              │
+│ ✅ Agregar notas al cierre                                                  │
+│ ❌ Aprobar cierres                                                          │
+│ ❌ Ver cierres de otros vendedores                                          │
+│ ❌ Anular cierres                                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ SUPERVISOR / ADMINISTRADOR                                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ ✅ Ver todos los cierres                                                    │
+│ ✅ Aprobar/Rechazar cierres                                                 │
+│ ✅ Investigar discrepancias                                                 │
+│ ✅ Generar reportes                                                         │
+│ ✅ Anular cierres si es necesario                                           │
+│ ✅ Ver historial completo                                                   │
+│ ✅ Cerrar caja de otros vendedores (si es necesario)                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+7. REPORTES GENERADOS
+═══════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ REPORTE DIARIO DE CIERRE                                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ CIERRE DE CAJA - 15/01/2025                                                │
+│ ═════════════════════════════════════════════════════════════════════════  │
+│                                                                             │
+│ INFORMACIÓN GENERAL:                                                       │
+│ • Vendedor: Juan Pérez                                                     │
+│ • Fecha: 15/01/2025                                                        │
+│ • Hora Apertura: 08:00 AM                                                  │
+│ • Hora Cierre: 06:00 PM                                                    │
+│ • Estado: CERRADO ✅                                                       │
+│                                                                             │
+│ RESUMEN FINANCIERO:                                                        │
+│ • Total Ventas: S/. 1,250.00                                               │
+│ • Cantidad de Transacciones: 25                                            │
+│ • Efectivo Esperado: S/. 500.00                                            │
+│ • Efectivo Real: S/. 520.00                                                │
+│ • Diferencia: +S/. 20.00                                                   │
+│                                                                             │
+│ DESGLOSE POR MÉTODO DE PAGO:                                               │
+│ • Efectivo: S/. 500.00 (10 transacciones)                                  │
+│ • Tarjeta: S/. 600.00 (12 transacciones)                                   │
+│ • Yape: S/. 150.00 (3 transacciones)                                       │
+│                                                                             │
+│ NOTAS:                                                                     │
+│ "Cliente en Venta #5 dio propina de S/. 20"                                │
+│                                                                             │
+│ APROBACIÓN:                                                                │
+│ • Aprobado por: María García (Supervisor)                                  │
+│ • Fecha: 15/01/2025 18:30                                                  │
+│ • Razón: "Propina registrada correctamente"                                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ REPORTE MENSUAL DE CIERRES                                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ REPORTE MENSUAL - ENERO 2025                                               │
+│ ═════════════════════════════════════════════════════════════════════════  │
+│                                                                             │
+│ ESTADÍSTICAS GENERALES:                                                    │
+│ • Total de Cierres: 31                                                     │
+│ • Cierres Perfectos: 28 (90.3%)                                            │
+│ • Cierres con Discrepancia: 3 (9.7%)                                       │
+│                                                                             │
+│ ANÁLISIS DE DISCREPANCIAS:                                                 │
+│ • Sobrantes Totales: S/. 45.00                                             │
+│ • Faltantes Totales: -S/. 15.00                                            │
+│ • Neto: +S/. 30.00                                                         │
+│                                                                             │
+│ INGRESOS TOTALES: S/. 38,750.00                                            │
+│                                                                             │
+│ TOP VENDEDORES:                                                            │
+│ 1. Juan Pérez: S/. 12,500.00 (10 cierres)                                  │
+│ 2. María López: S/. 11,250.00 (9 cierres)                                  │
+│ 3. Carlos Ruiz: S/. 15,000.00 (12 cierres)                                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+8. CHECKLIST DE IMPLEMENTACIÓN
+═════════════════════════��═════════════════════════════════════════════════════════
+
+FASE 1: BASE DE DATOS
+  ☐ Crear tabla cierres_caja
+  ☐ Crear tabla detalle_cierre_caja
+  ☐ Actualizar tabla ventas con cierre_caja_id
+  ☐ Crear índices para optimización
+  ☐ Ejecutar migraciones
+
+FASE 2: BACKEND
+  ☐ Crear cierreCajaController.ts
+  ☐ Implementar abrirCaja()
+  ☐ Implementar obtenerResumenDia()
+  ☐ Implementar cerrarCaja()
+  ☐ Implementar aprobarCierre()
+  ☐ Implementar obtenerCierres()
+  ☐ Crear rutas en cierreCaja.ts
+  ☐ Registrar rutas en server.ts
+
+FASE 3: FRONTEND
+  ☐ Crear cierreCajaService.ts
+  ☐ Crear página CierreCaja.tsx
+  ☐ Crear componentes necesarios
+  ☐ Actualizar App.tsx con ruta
+  ☐ Actualizar Sidebar con enlace
+  ☐ Implementar modales
+
+FASE 4: PRUEBAS
+  ☐ Probar apertura de caja
+  ☐ Probar cierre con dinero correcto
+  ☐ Probar cierre con sobrante
+  ☐ Probar cierre con faltante
+  ☐ Probar aprobación de supervisor
+  ☐ Probar historial de cierres
+  ☐ Probar reportes
+
+FASE 5: DOCUMENTACIÓN
+  ☐ Documentación técnica
+  ☐ Manual de usuario
+  ☐ Guía de supervisor
+  ☐ Capacitación de vendedores
+  ☐ Capacitación de supervisores
+
+═══════════════════════════════════════════════════════════════════════════════════
+FIN DE LA GUÍA VISUAL
+═══════════════════════════════════════════════════════════════════════════════════

@@ -93,6 +93,18 @@ async function main() {
 
   console.log('✅ Productos creados:', productosCreados.length);
 
+  // Crear una caja abierta de ejemplo para el admin (para pruebas de Cierre de Caja)
+  const cajaAdmin = await prisma.cierreCaja.create({
+    data: {
+      usuario_id: admin.id,
+      monto_inicial: 50,
+      observaciones: 'Caja de prueba creada por seed',
+      estado: 'ABIERTO',
+    },
+  });
+
+  console.log('✅ Caja abierta de ejemplo creada:', cajaAdmin.id);
+
   // Crear almacenamiento para cada producto (NUEVO)
   console.log('📦 Creando almacenamiento...');
   const almacenamientos = [];

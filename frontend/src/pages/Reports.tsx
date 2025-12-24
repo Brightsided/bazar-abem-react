@@ -1,14 +1,16 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { reportesService } from '@/services/reportesService';
+import { facturacionService } from '@/services/facturacionService';
 import { formatCurrency, formatDate, formatDateForInput } from '@/utils/formatters';
-import { FiltroReporte, VentaDetallada } from '@/types';
+import { FiltroReporte, VentaDetallada, ComprobanteElectronico } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { SalesChart } from '@/components/charts/SalesChart';
 import { PaymentMethodChart } from '@/components/charts/PaymentMethodChart';
 import { EmailModal } from '@/components/modals/EmailModal';
 import { WhatsAppModal } from '@/components/modals/WhatsAppModal';
 import { BolletaPrintModal } from '@/components/modals/BolletaPrintModal';
+import { SunatModal } from '@/components/modals/SunatModal';
 import { TrendingUp, CreditCard } from 'lucide-react';
 
 const Reports = () => {
@@ -21,9 +23,13 @@ const Reports = () => {
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   const [bolletaModalOpen, setBolletaModalOpen] = useState(false);
+  const [sunatModalOpen, setSunatModalOpen] = useState(false);
   
   // Estado para búsqueda en tabla
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Estado para almacenar estados de comprobantes
+  const [estadosComprobantes, setEstadosComprobantes] = useState<Record<number, string>>({});
 
   // ✅ Agregar debouncing para evitar múltiples requests
   const debouncedFiltro = useDebounce(filtro, 300);
@@ -34,6 +40,40 @@ const Reports = () => {
     staleTime: 1000 * 60 * 5, // 5 minutos
     gcTime: 1000 * 60 * 10, // 10 minutos (antes cacheTime)
   });
+
+  // Función para obtener estado del comprobante
+  const obtenerEstadoComprobante = async (ventaId: number) => {
+    try {
+      const resultado = await facturacionService.obtenerEstado(ventaId);
+      if (resultado.success && resultado.comprobante) {
+        setEstadosComprobantes(prev => ({
+          ...prev,
+          [ventaId]: resultado.comprobante!.estado
+        }));
+      } else {
+        setEstadosComprobantes(prev => ({
+          ...prev,
+          [ventaId]: 'SIN ENVIAR'
+        }));
+      }
+    } catch (error) {
+      setEstadosComprobantes(prev => ({
+        ...prev,
+        [ventaId]: 'ERROR'
+      }));
+    }
+  };
+
+  // Cargar estados cuando cambian las ventas
+  useEffect(() => {
+    if (reporte?.ventas) {
+      reporte.ventas.forEach(venta => {
+        if (!estadosComprobantes[venta.id]) {
+          obtenerEstadoComprobante(venta.id);
+        }
+      });
+    }
+  }, [reporte?.ventas, estadosComprobantes]);
 
   const handleFiltroChange = useCallback((nuevoFiltro: string) => {
     if (nuevoFiltro === 'personalizado') {
@@ -331,6 +371,9 @@ const Reports = () => {
                       <i className="fas fa-calendar mr-2"></i>Fecha
                     </th>
                     <th className="text-left py-4 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                      <i className="fas fa-file-check mr-2"></i>Estado
+                    </th>
+                    <th className="text-left py-4 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                       <i className="fas fa-cog mr-2"></i>Acciones
                     </th>
                   </tr>
@@ -339,7 +382,24 @@ const Reports = () => {
                   {reporte?.ventas && reporte.ventas.length > 0 ? (
                     reporte.ventas
                       .filter((venta) => {
-                        const searchLower = searchTerm.toLowerCase();
+                        const raw = searchTerm.trim();
+                        const searchLower = raw.toLowerCase();
+
+                        // Permite buscar por ID usando el formato que se muestra en UI: "#5"
+                        // Si el usuario escribe "#", interpretamos búsqueda exacta por ID.
+                        if (searchLower.startsWith('#')) {
+                          const idQuery = searchLower.replace(/^#+/, '').trim();
+                          if (!idQuery) return true;
+
+                          // Si es numérico: match exacto por ID
+                          if (/^\d+$/.test(idQuery)) {
+                            return venta.id === Number(idQuery);
+                          }
+
+                          // Si no es numérico, no matchea nada (evita false positives)
+                          return false;
+                        }
+
                         return (
                           venta.id.toString().includes(searchLower) ||
                           venta.cliente.toLowerCase().includes(searchLower) ||
@@ -388,7 +448,50 @@ const Reports = () => {
                               </span>
                             </td>
                             <td className="py-4 px-4 text-sm">
+                              {(() => {
+                                const estado = estadosComprobantes[venta.id] || 'SIN ENVIAR';
+                                let bgColor = 'bg-gray-500/20';
+                                let textColor = 'text-gray-600 dark:text-gray-400';
+                                let icon = 'fa-circle-xmark';
+                                
+                                if (estado === 'ACEPTADO') {
+                                  bgColor = 'bg-green-500/20';
+                                  textColor = 'text-green-600 dark:text-green-400';
+                                  icon = 'fa-check-circle';
+                                } else if (estado === 'RECHAZADO') {
+                                  bgColor = 'bg-red-500/20';
+                                  textColor = 'text-red-600 dark:text-red-400';
+                                  icon = 'fa-times-circle';
+                                } else if (estado === 'ENVIADO' || estado === 'FIRMADO') {
+                                  bgColor = 'bg-blue-500/20';
+                                  textColor = 'text-blue-600 dark:text-blue-400';
+                                  icon = 'fa-paper-plane';
+                                } else if (estado === 'PENDIENTE') {
+                                  bgColor = 'bg-yellow-500/20';
+                                  textColor = 'text-yellow-600 dark:text-yellow-400';
+                                  icon = 'fa-hourglass-half';
+                                }
+                                
+                                return (
+                                  <span className={`px-2 py-1 rounded-md ${bgColor} ${textColor} text-xs font-semibold flex items-center gap-1 w-fit`}>
+                                    <i className={`fas ${icon}`}></i>
+                                    {estado}
+                                  </span>
+                                );
+                              })()}
+                            </td>
+                            <td className="py-4 px-4 text-sm">
                               <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    setSelectedVenta(venta);
+                                    setSunatModalOpen(true);
+                                  }}
+                                  className="p-2 rounded-lg bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30 transition"
+                                  title="Enviar a SUNAT"
+                                >
+                                  <i className="fas fa-file-invoice text-sm"></i>
+                                </button>
                                 <button
                                   onClick={() => {
                                     setSelectedVenta(venta);
@@ -447,54 +550,101 @@ const Reports = () => {
                   <i className="fas fa-trophy mr-3 text-yellow-500"></i>
                   Ranking de Vendedores
                 </h2>
-                <span className="px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-xs font-semibold">
+                <span className="px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 text-xs font-semibold">
                   Top {reporte.ranking.length}
                 </span>
               </div>
+
+              {/* Lista */}
               <div className="space-y-3">
-                {reporte.ranking.map((vendedor, index) => (
-                  <div
-                    key={vendedor.id}
-                    className="relative overflow-hidden rounded-lg backdrop-blur-sm bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/10 p-4 hover:border-white/40 dark:hover:border-white/20 transition-all duration-300 group"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/0 to-orange-600/0 group-hover:from-yellow-600/5 group-hover:to-orange-600/5 transition-all duration-300"></div>
-                    <div className="relative flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div
-                          className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg ${
-                            index === 0
-                              ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg shadow-yellow-500/50'
-                              : index === 1
-                              ? 'bg-gradient-to-br from-gray-300 to-gray-500 shadow-lg shadow-gray-400/50'
-                              : index === 2
-                              ? 'bg-gradient-to-br from-amber-500 to-amber-700 shadow-lg shadow-amber-500/50'
-                              : 'bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/50'
-                          }`}
-                        >
-                          {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900 dark:text-white">
-                            {vendedor.nombre}
-                          </p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
-                            <i className="fas fa-shopping-bag mr-1 text-blue-500"></i>
-                            {vendedor.cantidad} ventas
-                          </p>
+                {(() => {
+                  const maxTotal = Math.max(...reporte.ranking.map((v) => v.total || 0), 1);
+
+                  return reporte.ranking.map((vendedor, index) => {
+                    const percent = Math.round(((vendedor.total || 0) / maxTotal) * 100);
+
+                    const medalLabel =
+                      index === 0 ? 'Líder' : index === 1 ? '2do lugar' : index === 2 ? '3er lugar' : `#${index + 1}`;
+
+                    const badgeClass =
+                      index === 0
+                        ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-yellow-500/40'
+                        : index === 1
+                        ? 'bg-gradient-to-br from-slate-300 to-slate-500 shadow-slate-400/40'
+                        : index === 2
+                        ? 'bg-gradient-to-br from-amber-500 to-amber-700 shadow-amber-500/40'
+                        : 'bg-gradient-to-br from-blue-500 to-purple-600 shadow-blue-500/40';
+
+                    const pillClass =
+                      index === 0
+                        ? 'bg-yellow-500/15 text-yellow-800 dark:text-yellow-300'
+                        : index === 1
+                        ? 'bg-slate-500/10 text-slate-700 dark:text-slate-300'
+                        : index === 2
+                        ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
+                        : 'bg-blue-500/10 text-blue-700 dark:text-blue-300';
+
+                    return (
+                      <div
+                        key={vendedor.id}
+                        className="relative overflow-hidden rounded-xl backdrop-blur-sm bg-white/40 dark:bg-white/5 border border-white/30 dark:border-white/10 p-4 hover:border-white/60 dark:hover:border-white/20 transition-all duration-300 group"
+                      >
+                        {/* hover glow */}
+                        <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-yellow-500/10 via-purple-500/5 to-blue-500/10" />
+
+                        <div className="relative flex items-center gap-4">
+                          {/* Rank badge */}
+                          <div className="relative">
+                            <div
+                              className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-white text-lg shadow-lg ${badgeClass}`}
+                            >
+                              {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+                            </div>
+                          </div>
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="font-semibold text-gray-900 dark:text-white truncate">
+                                  {vendedor.nombre}
+                                </p>
+                                <div className="mt-1 flex flex-wrap items-center gap-2">
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${pillClass}`}>
+                                    {medalLabel}
+                                  </span>
+                                  <span className="text-xs text-gray-600 dark:text-gray-400 inline-flex items-center">
+                                    <i className="fas fa-shopping-bag mr-1 text-blue-500"></i>
+                                    {vendedor.cantidad} ventas
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="text-right">
+                                <p className="text-xl font-bold text-green-700 dark:text-green-400 leading-none">
+                                  {formatCurrency(vendedor.total)}
+                                </p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                  {percent}% del líder
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* progress */}
+                            <div className="mt-3">
+                              <div className="h-2 rounded-full bg-gray-200/70 dark:bg-white/10 overflow-hidden">
+                                <div
+                                  className="h-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-yellow-500"
+                                  style={{ width: `${percent}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                          {formatCurrency(vendedor.total)}
-                        </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                          <i className="fas fa-chart-line text-green-500 mr-1"></i>
-                          Ingresos
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  });
+                })()}
               </div>
             </div>
           )}
@@ -523,6 +673,18 @@ const Reports = () => {
               setSelectedVenta(null);
             }}
             venta={selectedVenta}
+          />
+          <SunatModal
+            isOpen={sunatModalOpen}
+            onClose={() => {
+              setSunatModalOpen(false);
+              setSelectedVenta(null);
+            }}
+            venta={selectedVenta}
+            onSuccess={() => {
+              setSunatModalOpen(false);
+              setSelectedVenta(null);
+            }}
           />
         </>
       )}

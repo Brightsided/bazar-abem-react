@@ -155,3 +155,48 @@ export interface MovimientoInventario {
   producto: ProductoAlmacenamiento;
   usuario?: Usuario;
 }
+
+// Tipos para Facturación Electrónica SUNAT
+export interface ComprobanteElectronico {
+  id: number;
+  venta_id: number;
+  tipo: 'FACTURA' | 'BOLETA';
+  serie: string;
+  numero: number;
+  xmlSinFirma: string;
+  xmlFirmado?: string;
+  cdrXml?: string;
+  hashCpe?: string;
+  estado: 'PENDIENTE' | 'FIRMADO' | 'ENVIADO' | 'ACEPTADO' | 'RECHAZADO';
+  codigoSunat?: string;
+  mensajeSunat?: string;
+  fechaEnvio?: string;
+  fechaRespuesta?: string;
+  intentosEnvio: number;
+  ultimoError?: string;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
+  venta?: VentaDetallada;
+}
+
+export interface EstadoComprobante {
+  success: boolean;
+  comprobante?: ComprobanteElectronico;
+  message?: string;
+}
+
+export interface ResultadoFacturacion {
+  success: boolean;
+  message: string;
+  comprobante?: {
+    id: number;
+    ventaId: number;
+    tipo: string;
+    serie: string;
+    numero: number;
+    estado: string;
+    codigoSunat?: string;
+    mensajeSunat?: string;
+  };
+  error?: string;
+}

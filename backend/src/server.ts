@@ -14,6 +14,8 @@ import clientesRoutes from './routes/clientes.js';
 import rucRoutes from './routes/ruc.js';
 import comprobantesRoutes from './routes/comprobantes.js';
 import almacenamientoRoutes from './routes/almacenamiento.js';
+import facturacionRoutes from './routes/facturacion.js';
+import cierreCajaRoutes from './routes/cierreCaja.js';
 
 // Middleware
 import { errorHandler } from './middleware/errorHandler.js';
@@ -41,6 +43,8 @@ app.use('/api/clientes', clientesRoutes);
 app.use('/api/ruc', rucRoutes);
 app.use('/api/comprobantes', comprobantesRoutes);
 app.use('/api/almacenamiento', almacenamientoRoutes);
+app.use('/api/facturacion', facturacionRoutes);
+app.use('/api/cierre-caja', cierreCajaRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

@@ -18,6 +18,7 @@ model Usuario {
   rol                   String                  // 'Administrador' o 'Vendedor'
   ventas                Venta[]
   movimientos_inventario MovimientoInventario[]
+  cierres_caja          CierreCaja[]
 
   @@map("usuarios")
 }
@@ -116,6 +117,7 @@ model Venta {
   clienteRel   Cliente?       @relation(fields: [cliente_id], references: [id])
   usuarioRel   Usuario?       @relation(fields: [usuario_id], references: [id])
   detalles     DetalleVenta[]
+  comprobante  ComprobanteElectronico?
 
   // ✅ ÍNDICES OPTIMIZADOS PARA REPORTES
   // Índice para filtros por fecha (CRÍTICO)
@@ -147,4 +149,62 @@ model DetalleVenta {
   productoRel Producto? @relation(fields: [producto_id], references: [id])
 
   @@map("detalle_venta")
+}
+
+model ComprobanteElectronico {
+  id                Int       @id @default(autoincrement())
+  venta_id          Int       @unique
+  tipo              String    // 'FACTURA' o 'BOLETA'
+  serie             String    // Ej: F001, B001
+  numero            Int       // Número correlativo
+  xmlSinFirma       String    @db.LongText
+  xmlFirmado        String?   @db.LongText
+  cdrXml            String?   @db.LongText
+  hashCpe           String?   // Hash del comprobante
+  estado            String    @default("PENDIENTE") // PENDIENTE, ACEPTADO, RECHAZADO, ENVIADO
+  codigoSunat       String?   // Código de respuesta SUNAT
+  mensajeSunat      String?   @db.Text // Mensaje de respuesta SUNAT
+  fechaEnvio        DateTime?
+  fechaRespuesta    DateTime?
+  intentosEnvio     Int       @default(0)
+  ultimoError       String?   @db.Text
+  venta             Venta     @relation(fields: [venta_id], references: [id], onDelete: Cascade)
+  fecha_creacion    DateTime  @default(now())
+  fecha_actualizacion DateTime @default(now()) @updatedAt
+
+  @@index([venta_id])
+  @@index([estado])
+  @@index([fecha_creacion])
+  @@index([serie, numero])
+  @@map("comprobantes_electronicos")
+}
+
+model CierreCaja {
+  id                Int      @id @default(autoincrement())
+  usuario_id        Int
+  fecha_apertura    DateTime @default(now())
+  fecha_cierre      DateTime?
+  estado            String   @default("ABIERTO") // ABIERTO | CERRADO
+
+  monto_inicial     Decimal  @db.Decimal(10, 2) @default(0)
+  monto_final       Decimal  @db.Decimal(10, 2) @default(0)
+  total_ventas      Decimal  @db.Decimal(12, 2) @default(0)
+  total_efectivo    Decimal  @db.Decimal(12, 2) @default(0)
+  total_yape        Decimal  @db.Decimal(12, 2) @default(0)
+  total_plin        Decimal  @db.Decimal(12, 2) @default(0)
+  total_tarjeta     Decimal  @db.Decimal(12, 2) @default(0)
+  total_transferencia Decimal @db.Decimal(12, 2) @default(0)
+  total_otro        Decimal  @db.Decimal(12, 2) @default(0)
+
+  total_anulaciones Decimal  @db.Decimal(12, 2) @default(0)
+  total_descuentos  Decimal  @db.Decimal(12, 2) @default(0)
+  observaciones     String?  @db.Text
+
+  usuario           Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@index([usuario_id])
+  @@index([estado])
+  @@index([fecha_apertura])
+  @@index([fecha_cierre])
+  @@map("cierres_caja")
 }

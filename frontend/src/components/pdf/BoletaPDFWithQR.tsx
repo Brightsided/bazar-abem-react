@@ -173,8 +173,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   qrImage: {
-    width: '40mm',
-    height: '40mm',
+    width: '30mm',
+    height: '30mm',
     marginHorizontal: 'auto',
   },
   qrLabel: {

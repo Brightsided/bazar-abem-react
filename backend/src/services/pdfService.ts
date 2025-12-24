@@ -32,12 +32,24 @@ export const generateBoletaPDF = async (venta: VentaConDetalles): Promise<Buffer
   return new Promise(async (resolve, reject) => {
     try {
       // Tamaño de página para impresora térmica 80mm
+      // Importante: usar altura dinámica para evitar espacios enormes y layouts "rotos" en visores PDF (como Gmail)
       const pageWidth = 226.77; // 80mm en puntos
-      const pageHeight = 841.89; // A4 height
-      const doc = new PDFDocument({ 
-        size: [pageWidth, pageHeight],
-        margin: 14.17, // 5mm en puntos
-        bufferPages: true
+      const margin = 14.17; // 5mm en puntos
+
+      // Estimar alto en base a contenido (header + info + items + total + footer + QR)
+      // Nota: el alto real se auto-recorta al final usando buffered pages.
+      const baseHeight = 320;
+      const perItemHeight = 16;
+      const qrBlockHeight = 150;
+      const estimatedHeight = Math.max(
+        520,
+        baseHeight + venta.detalles.length * perItemHeight + qrBlockHeight
+      );
+
+      const doc = new PDFDocument({
+        size: [pageWidth, estimatedHeight],
+        margin,
+        bufferPages: true,
       });
       const chunks: Buffer[] = [];
 
@@ -45,8 +57,7 @@ export const generateBoletaPDF = async (venta: VentaConDetalles): Promise<Buffer
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      const margin = 14.17; // 5mm
-      const pageContentWidth = pageWidth - (margin * 2);
+      const pageContentWidth = pageWidth - margin * 2;
 
       // Header
       doc.fontSize(14).font('Courier-Bold').text('BAZAR ABEM', { align: 'center' });
@@ -80,14 +91,16 @@ export const generateBoletaPDF = async (venta: VentaConDetalles): Promise<Buffer
 
       // Tabla de productos - Headers
       doc.fontSize(7).font('Courier-Bold');
-      const col1X = margin;
-      const col2X = margin + (pageContentWidth * 0.5);
-      const col3X = margin + (pageContentWidth * 0.65);
-      const col4X = margin + (pageContentWidth * 0.85);
+      const colDescX = margin;
+      const colCantX = margin + pageContentWidth * 0.62;
+      const colTotalX = margin + pageContentWidth * 0.78;
 
-      doc.text('Descripción', col1X, doc.y, { width: pageContentWidth * 0.5 });
-      doc.text('Cant.', col2X, doc.y - 8, { width: pageContentWidth * 0.15, align: 'right' });
-      doc.text('Total', col3X, doc.y - 8, { width: pageContentWidth * 0.2, align: 'right' });
+      const headerY = doc.y;
+      doc.text('Descripción', colDescX, headerY, { width: pageContentWidth * 0.60 });
+      doc.text('Cant.', colCantX, headerY, { width: pageContentWidth * 0.16, align: 'right' });
+      doc.text('Total', colTotalX, headerY, { width: pageContentWidth * 0.22, align: 'right' });
+
+      doc.y = headerY + 10;
 
       doc.moveTo(margin, doc.y + 2).lineTo(pageWidth - margin, doc.y + 2).stroke();
       doc.moveDown(0.5);
@@ -97,42 +110,58 @@ export const generateBoletaPDF = async (venta: VentaConDetalles): Promise<Buffer
       for (const detalle of venta.detalles) {
         const subtotal = Number(detalle.precio) * detalle.cantidad;
         const nombreProducto = detalle.producto || 'Producto';
-        
-        doc.text(nombreProducto, col1X, doc.y, { width: pageContentWidth * 0.5 });
-        doc.text(detalle.cantidad.toString(), col2X, doc.y - 8, { width: pageContentWidth * 0.15, align: 'right' });
-        doc.text(`S/ ${subtotal.toFixed(2)}`, col3X, doc.y - 8, { width: pageContentWidth * 0.2, align: 'right' });
-        doc.moveDown(0.3);
+
+        const lineY = doc.y;
+        // 2 líneas máx para evitar desbordes en boleta térmica
+        const wrapped = doc.heightOfString(nombreProducto, { width: pageContentWidth * 0.60 }) > 10;
+
+        doc.text(nombreProducto, colDescX, lineY, { width: pageContentWidth * 0.60 });
+        doc.text(detalle.cantidad.toString(), colCantX, lineY, { width: pageContentWidth * 0.16, align: 'right' });
+        doc.text(`S/ ${subtotal.toFixed(2)}`, colTotalX, lineY, { width: pageContentWidth * 0.22, align: 'right' });
+
+        // Si el nombre se envuelve, damos más espacio
+        doc.y = lineY + (wrapped ? 18 : 12);
       }
 
       doc.moveTo(margin, doc.y + 2).lineTo(pageWidth - margin, doc.y + 2).stroke();
       doc.moveDown(0.5);
 
-      // Total
+      // Total (una sola línea, sin saltos ni columnas que provoquen "TOTA" / "L:")
       doc.fontSize(11).font('Courier-Bold');
-      doc.text('TOTAL:', col3X - 30, doc.y, { width: 30, align: 'right' });
-      doc.text(`S/ ${Number(venta.precio_total).toFixed(2)}`, col3X, doc.y - 11, { width: pageContentWidth * 0.2, align: 'right' });
+      const totalText = `TOTAL: S/ ${Number(venta.precio_total).toFixed(2)}`;
+      doc.text(totalText, margin, doc.y, { width: pageContentWidth, align: 'right' });
 
-      doc.moveDown(1);
+      doc.moveDown(0.8);
 
-      // Footer
-      doc.fontSize(7).font('Courier').text('Gracias por su compra', { align: 'center' });
-      doc.text('Conserve su boleta', { align: 'center' });
-      doc.text('para garantía', { align: 'center' });
+      // Footer (forzar centrado y bloquear cualquier desplazamiento)
+      doc.fontSize(7).font('Courier');
+      doc.text('Gracias por su compra', margin, doc.y, { width: pageContentWidth, align: 'center' });
+      doc.text('Conserve su boleta', margin, doc.y, { width: pageContentWidth, align: 'center' });
+      doc.text('para garantía', margin, doc.y, { width: pageContentWidth, align: 'center' });
 
-      doc.moveDown(0.5);
+      doc.moveDown(0.6);
       doc.moveTo(margin, doc.y).lineTo(pageWidth - margin, doc.y).stroke();
-      doc.moveDown(0.5);
+      doc.moveDown(0.6);
 
       // QR Code
       const qrData = `BOLETA#${String(venta.id).padStart(8, '0')}|${venta.cliente}|S/ ${Number(venta.precio_total).toFixed(2)}|${new Date(venta.fecha_venta).toLocaleDateString('es-PE')}`;
       const qrImage = await generateQRCode(qrData);
-      
-      // Centrar QR
-      const qrSize = 100;
+
+      // Centrar QR (más pequeño para boleta térmica)
+      const qrSize = 78;
       const qrX = (pageWidth - qrSize) / 2;
       doc.image(qrImage, qrX, doc.y, { width: qrSize });
-      
-      doc.fontSize(7).font('Courier').text(`Boleta #${String(venta.id).padStart(8, '0')}`, { align: 'center' });
+      doc.moveDown(0.3);
+
+      doc.fontSize(7).font('Courier').text(`Boleta #${String(venta.id).padStart(8, '0')}`, margin, doc.y, {
+        width: pageContentWidth,
+        align: 'center',
+      });
+
+      // Auto-recortar la página al contenido real para que el PDF no quede con altura gigante.
+      const usedHeight = Math.min(Math.max(doc.y + margin, 520), estimatedHeight);
+      doc.flushPages();
+      doc.page.height = usedHeight;
 
       doc.end();
     } catch (error) {

@@ -1,10 +1,7 @@
-import { useState, useEffect } from 'react';
-import { X, Printer, Download } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { X, Printer, Download, Loader } from 'lucide-react';
 import { VentaDetallada } from '@/types';
-import { PDFDownloadLink, PDFViewer } from '@react-pdf/renderer';
-import { BoletaPDFWithQR } from '@/components/pdf/BoletaPDFWithQR';
-import QRCode from 'qrcode';
-import { printBoleta } from '@/utils/boletaPrinter';
+import { reportesService } from '@/services/reportesService';
 
 interface BolletaPrintModalProps {
   isOpen: boolean;
@@ -14,38 +11,68 @@ interface BolletaPrintModalProps {
 
 export const BolletaPrintModal = ({ isOpen, onClose, venta }: BolletaPrintModalProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [isLoadingPdf, setIsLoadingPdf] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string>('');
 
-  // Generar QR cuando se abre el modal
+  const filename = useMemo(() => {
+    if (!venta) return 'boleta.pdf';
+    return `boleta_${String(venta.id).padStart(8, '0')}.pdf`;
+  }, [venta]);
+
+  // Cargar PDF del backend para que sea 100% igual al adjunto por email
   useEffect(() => {
-    if (isOpen && venta) {
-      const generateQR = async () => {
-        try {
-          const qrData = `BOLETA#${String(venta.id).padStart(8, '0')}|${venta.cliente}|S/ ${Number(venta.precio_total).toFixed(2)}|${new Date(venta.fecha_venta).toLocaleDateString()}`;
-          const dataUrl = await QRCode.toDataURL(qrData, {
-            errorCorrectionLevel: 'H',
-            margin: 1,
-            width: 200,
-          });
-          setQrDataUrl(dataUrl);
-        } catch (error) {
-          console.error('Error generating QR code:', error);
-        }
-      };
-      generateQR();
-    }
+    let objectUrl: string | null = null;
+
+    const load = async () => {
+      if (!isOpen || !venta) return;
+      setIsLoadingPdf(true);
+      try {
+        const blob = await reportesService.generarPDF(venta.id, 'boleta');
+        objectUrl = URL.createObjectURL(blob);
+        setPdfUrl(objectUrl);
+      } catch (error) {
+        console.error('Error loading boleta pdf:', error);
+        setPdfUrl('');
+      } finally {
+        setIsLoadingPdf(false);
+      }
+    };
+
+    load();
+
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
   }, [isOpen, venta]);
 
   if (!isOpen || !venta) return null;
 
   const handlePrint = () => {
-    if (qrDataUrl) {
-      setIsGenerating(true);
-      printBoleta(venta, qrDataUrl);
-      setTimeout(() => {
-        setIsGenerating(false);
-      }, 500);
+    if (!pdfUrl) return;
+
+    setIsGenerating(true);
+
+    // Abrir el PDF (backend) en una pestaña para imprimirlo (misma boleta exacta)
+    const win = window.open(pdfUrl, '_blank');
+    if (!win) {
+      setIsGenerating(false);
+      return;
     }
+
+    // Esperar un poco para que cargue y disparar print
+    const timer = window.setTimeout(() => {
+      try {
+        win.focus();
+        win.print();
+      } finally {
+        window.setTimeout(() => {
+          setIsGenerating(false);
+        }, 500);
+      }
+    }, 800);
+
+    // Si se cierra antes, limpiar
+    win.addEventListener('beforeunload', () => window.clearTimeout(timer));
   };
 
   return (
@@ -65,11 +92,27 @@ export const BolletaPrintModal = ({ isOpen, onClose, venta }: BolletaPrintModalP
           </button>
         </div>
 
-        {/* Content - PDF Viewer */}
-        <div className="flex-1 overflow-hidden">
-          <PDFViewer style={{ width: '100%', height: '100%' }}>
-            <BoletaPDFWithQR venta={venta} qrDataUrl={qrDataUrl} />
-          </PDFViewer>
+        {/* Content - PDF Viewer (desde backend) */}
+        <div className="flex-1 overflow-hidden bg-gray-100 dark:bg-gray-950">
+          {isLoadingPdf ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                <Loader className="w-5 h-5 animate-spin" />
+                <span>Cargando boleta...</span>
+              </div>
+            </div>
+          ) : pdfUrl ? (
+            <iframe
+              title="Vista previa boleta"
+              src={pdfUrl}
+              className="w-full h-full"
+              style={{ border: 'none' }}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center text-gray-600 dark:text-gray-400">
+              No se pudo cargar la boleta.
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -81,21 +124,22 @@ export const BolletaPrintModal = ({ isOpen, onClose, venta }: BolletaPrintModalP
             Cerrar
           </button>
           
-          <PDFDownloadLink
-            document={<BoletaPDFWithQR venta={venta} qrDataUrl={qrDataUrl} />}
-            fileName={`boleta_${venta.id}.pdf`}
-            className="flex-1"
+          <button
+            onClick={() => {
+              if (!pdfUrl) return;
+              const a = document.createElement('a');
+              a.href = pdfUrl;
+              a.download = filename;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+            }}
+            disabled={!pdfUrl || isLoadingPdf}
+            className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {({ loading }) => (
-              <button
-                disabled={loading}
-                className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                {loading ? 'Generando...' : 'Descargar'}
-              </button>
-            )}
-          </PDFDownloadLink>
+            <Download className="w-4 h-4" />
+            Descargar
+          </button>
 
           <button
             onClick={handlePrint}
