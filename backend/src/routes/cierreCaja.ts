@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate, isAdmin } from '../middleware/auth';
 import {
   abrirCaja,
   cerrarCaja,
@@ -12,8 +12,8 @@ const router = Router();
 
 router.get('/estado', authenticate, obtenerEstadoCaja);
 router.get('/preview', authenticate, previsualizarCierre);
-router.post('/abrir', authenticate, abrirCaja);
-router.post('/cerrar', authenticate, cerrarCaja);
+router.post('/abrir', authenticate, isAdmin, abrirCaja);
+router.post('/cerrar', authenticate, isAdmin, cerrarCaja);
 router.get('/', authenticate, listarCierres);
 
 export default router;

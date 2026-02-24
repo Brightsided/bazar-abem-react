@@ -19,6 +19,7 @@ import cierreCajaRoutes from './routes/cierreCaja.js';
 
 // Middleware
 import { errorHandler } from './middleware/errorHandler.js';
+import { generalLimiter } from './config/rateLimiter.js';
 
 dotenv.config();
 
@@ -27,12 +28,28 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(helmet());
-app.use(cors());
+
+// CORS configuración segura
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? (process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : false)
+    : ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  maxAge: 86400 // 24 horas
+};
+
+app.use(cors(corsOptions));
 app.use(morgan('dev'));
 // ✅ Agregar compresión GZIP
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ✅ Rate Limiting - Protección contra ataques de fuerza bruta y DoS
+// Aplicar rate limiting general a todas las rutas
+app.use(generalLimiter);
 
 // Routes
 app.use('/api/auth', authRoutes);

@@ -99,6 +99,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         },
       },
     });
+    const ventasHoyNum = Number(ventasHoy);
 
     // Total de hoy
     const totalHoy = await prisma.venta.aggregate({
@@ -139,7 +140,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 
     // Promedio por venta
     const promedioVenta =
-      ventasHoy > 0 ? (totalHoy._sum.precio_total || 0) / ventasHoy : 0;
+      ventasHoyNum > 0 ? Number(totalHoy._sum.precio_total || 0) / ventasHoyNum : 0;
 
     res.json({
       ventasHoy,

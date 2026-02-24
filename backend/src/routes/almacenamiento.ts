@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, isAdmin } from '../middleware/auth.js';
 import {
   getAlmacenamiento,
   getAlmacenamientoProducto,
@@ -28,19 +28,19 @@ router.get('/disponibles', getProductosDisponibles);
 router.get('/stock-bajo', getProductosStockBajo);
 
 // Crear nuevo almacenamiento
-router.post('/', createAlmacenamiento);
+router.post('/', isAdmin, createAlmacenamiento);
 
 // Obtener un producto del almacenamiento
 router.get('/:id', getAlmacenamientoProducto);
 
 // Actualizar almacenamiento (stock y stock_minimo)
-router.put('/:id', updateAlmacenamiento);
+router.put('/:id', isAdmin, updateAlmacenamiento);
 
 // Actualizar stock de un producto
-router.post('/actualizar-stock', actualizarStock);
+router.post('/actualizar-stock', isAdmin, actualizarStock);
 
 // Generar código de barras
-router.post('/generar-codigo-barras', generarCodigoBarras);
+router.post('/generar-codigo-barras', isAdmin, generarCodigoBarras);
 
 // Obtener historial de movimientos
 router.get('/movimientos/historial', getMovimientosInventario);

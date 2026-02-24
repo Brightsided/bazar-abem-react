@@ -36,13 +36,7 @@ const RegisterSale = () => {
   const [stockDisponible, setStockDisponible] = useState<{ [key: number]: number }>({});
 
   const {
-    register,
-    control,
-    handleSubmit,
-    watch,
-    reset,
-    setValue,
-    getValues,
+    register, control, handleSubmit, watch, reset, setValue, getValues,
     formState: { errors },
   } = useForm<VentaForm>({
     resolver: zodResolver(ventaSchema),
@@ -53,64 +47,37 @@ const RegisterSale = () => {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'productos',
-  });
-
+  const { fields, append, remove } = useFieldArray({ control, name: 'productos' });
   const productos = watch('productos');
 
-  // Obtener lista de clientes
   const { data: clientes = [] } = useQuery({
     queryKey: ['clientes'],
     queryFn: clientesService.getClientes,
   });
 
-  // Inicializar cliente_id cuando el componente carga
   useEffect(() => {
     if (clientes.length > 0) {
       const clienteCasual = clientes.find(c => c.nombre.toLowerCase() === 'cliente casual');
-      if (clienteCasual) {
-        setValue('cliente_id', clienteCasual.id);
-      }
+      if (clienteCasual) setValue('cliente_id', clienteCasual.id);
     }
   }, [clientes, setValue]);
 
-  // Calcular total - se actualiza cuando cambian los productos
   useEffect(() => {
     const currentProductos = getValues('productos');
-    const newTotal = currentProductos.reduce(
-      (sum, prod) => sum + (prod.cantidad || 0) * (prod.precio || 0),
-      0
-    );
+    const newTotal = currentProductos.reduce((sum, prod) => sum + (prod.cantidad || 0) * (prod.precio || 0), 0);
     setTotal(newTotal);
   }, [productos, getValues]);
 
-  // Manejar selección de producto
   const handleProductSelect = (index: number, producto: Almacenamiento) => {
     if (producto) {
-      console.log('Producto seleccionado:', producto);
       const precioNumerico = Number(producto.producto.precio);
-      
-      // Cargar precio automáticamente
       setValue(`productos.${index}.precio`, precioNumerico, { shouldDirty: true, shouldTouch: true });
-      // Cargar producto_id
       setValue(`productos.${index}.producto_id`, producto.producto.id, { shouldDirty: true, shouldTouch: true });
-      // Cargar stock disponible
       setValue(`productos.${index}.stock_disponible`, producto.stock, { shouldDirty: true, shouldTouch: true });
-      // Guardar en estado para validación
-      setStockDisponible(prev => ({
-        ...prev,
-        [index]: producto.stock
-      }));
-      
-      // Forzar actualización del total inmediatamente
+      setStockDisponible(prev => ({ ...prev, [index]: producto.stock }));
       setTimeout(() => {
         const currentProductos = getValues('productos');
-        const newTotal = currentProductos.reduce(
-          (sum, prod) => sum + (prod.cantidad || 0) * (prod.precio || 0),
-          0
-        );
+        const newTotal = currentProductos.reduce((sum, prod) => sum + (prod.cantidad || 0) * (prod.precio || 0), 0);
         setTotal(newTotal);
       }, 0);
     }
@@ -125,16 +92,12 @@ const RegisterSale = () => {
       reset();
       setTotal(0);
       setStockDisponible({});
-      // Reinicializar cliente_id después del reset
       setTimeout(() => {
         const clienteCasual = clientes.find(c => c.nombre.toLowerCase() === 'cliente casual');
-        if (clienteCasual) {
-          setValue('cliente_id', clienteCasual.id);
-        }
+        if (clienteCasual) setValue('cliente_id', clienteCasual.id);
       }, 0);
     },
     onError: (error: any) => {
-      console.error('Error:', error);
       showError(error.response?.data?.message || 'Error al registrar la venta');
     },
   });
@@ -143,119 +106,104 @@ const RegisterSale = () => {
     mutation.mutate(data);
   };
 
+  const paymentMethods = [
+    { value: 'Efectivo' as const, icon: 'fa-money-bill', label: 'Efectivo' },
+    { value: 'Tarjeta De Credito/Debito' as const, icon: 'fa-credit-card', label: 'Tarjeta' },
+    { value: 'Yape' as const, icon: 'fa-mobile-alt', label: 'Yape' },
+  ];
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header Section */}
-      <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10 dark:from-blue-600/5 dark:to-purple-600/5 rounded-xl blur-xl"></div>
-        <div className="relative backdrop-blur-xl bg-white/50 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl p-6">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent mb-2">
-            <i className="fas fa-cash-register mr-3"></i>
-            Registrar Venta
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 flex items-center">
-            <i className="fas fa-info-circle mr-2 text-blue-500"></i>
-            Completa el formulario para registrar una nueva venta
-          </p>
-        </div>
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-50">Registrar Venta</h1>
+        <p className="text-sm text-surface-400 dark:text-surface-500 mt-1">
+          Completa el formulario para registrar una nueva venta
+        </p>
       </div>
 
-      {/* Main Form Container */}
+      {/* Main */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Form Section */}
+        {/* Form */}
         <div className="lg:col-span-2">
-          <div className="relative overflow-hidden rounded-xl backdrop-blur-xl bg-white/50 dark:bg-white/5 border border-white/20 dark:border-white/10 p-6 hover:border-white/40 dark:hover:border-white/20 transition-all duration-300">
+          <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {/* Cliente Field */}
-              <div className="group">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3 transition-colors group-focus-within:text-blue-500">
-                  <i className="fas fa-user mr-2 text-blue-500"></i>
+              {/* Client */}
+              <div>
+                <label className="block text-xs font-semibold text-surface-500 dark:text-surface-400 mb-2 uppercase tracking-wider">
                   Cliente
                 </label>
                 <ClientSearch
                   value={watch('cliente')}
                   onChange={(value) => setValue('cliente', value)}
                   onClientSelect={(client: Cliente | null) => {
-                    if (client) {
-                      setValue('cliente_id', client.id);
-                    } else {
-                      setValue('cliente_id', null);
-                    }
+                    setValue('cliente_id', client ? client.id : null);
                   }}
                   placeholder="Buscar o crear cliente..."
                 />
                 {errors.cliente && (
-                  <p className="text-red-400 text-xs mt-2 flex items-center animate-pulse">
-                    <i className="fas fa-exclamation-circle mr-1"></i>
+                  <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1">
+                    <i className="fas fa-exclamation-circle text-[10px]"></i>
                     {errors.cliente.message}
                   </p>
                 )}
               </div>
 
-              {/* Productos Section */}
+              {/* Products */}
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
-                    <i className="fas fa-box mr-2 text-purple-500"></i>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">
                     Productos
                   </label>
                   <button
                     type="button"
                     onClick={() => append({ nombre: '', cantidad: 1, precio: 0 })}
-                    className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xs font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-purple-500/50 flex items-center gap-2"
+                    className="px-3 py-1.5 bg-mint-500/10 text-mint-700 dark:text-mint-400 text-xs font-semibold rounded-lg hover:bg-mint-500/20 transition-colors flex items-center gap-1.5"
                   >
-                    <i className="fas fa-plus"></i>
-                    Agregar Producto
+                    <i className="fas fa-plus text-[10px]"></i>
+                    Agregar
                   </button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {fields.map((field, index) => (
-                    <div
-                      key={field.id}
-                      className="group relative overflow-hidden rounded-lg backdrop-blur-sm bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/10 p-4 hover:border-white/40 dark:hover:border-white/20 transition-all duration-300"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-purple-600/0 to-pink-600/0 group-hover:from-purple-600/5 group-hover:to-pink-600/5 transition-all duration-300"></div>
-                      <div className="relative grid grid-cols-12 gap-3">
+                    <div key={field.id} className="bg-surface-50 dark:bg-surface-800/50 border border-surface-200 dark:border-surface-800 rounded-lg p-3">
+                      <div className="grid grid-cols-12 gap-2">
                         <div className="col-span-6 md:col-span-5">
-                          <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                            Producto
-                          </label>
+                          <label className="text-[11px] font-medium text-surface-400 dark:text-surface-500 mb-1 block">Producto</label>
                           <ProductSearch
                             value={productos[index]?.nombre || ''}
                             onChange={(value) => setValue(`productos.${index}.nombre`, value)}
-                            placeholder="Buscar producto..."
+                            placeholder="Buscar..."
                             onProductSelectFull={(producto) => handleProductSelect(index, producto)}
                           />
                         </div>
-                        <div className="col-span-3 md:col-span-3">
-                          <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                            Cantidad {stockDisponible[index] && <span className="text-purple-500">Máx: {stockDisponible[index]}</span>}
+                        <div className="col-span-3">
+                          <label className="text-[11px] font-medium text-surface-400 dark:text-surface-500 mb-1 block">
+                            Cant. {stockDisponible[index] && <span className="text-mint-600 dark:text-mint-400">Máx: {stockDisponible[index]}</span>}
                           </label>
                           <input
                             type="number"
                             {...register(`productos.${index}.cantidad`, { valueAsNumber: true })}
-                            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 text-center"
+                            className="w-full px-3 py-2 bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg text-surface-900 dark:text-surface-50 text-sm text-center focus:outline-none focus:border-mint-500 focus:ring-1 focus:ring-mint-500/20 transition-all"
                             placeholder="1"
                             min="1"
                             max={stockDisponible[index] || 999}
                           />
                           {productos[index]?.cantidad > (stockDisponible[index] || 0) && stockDisponible[index] > 0 && (
-                            <p className="text-yellow-500 text-xs mt-1 flex items-center">
-                              <i className="fas fa-exclamation-triangle mr-1"></i>
-                              Cantidad excede stock disponible
+                            <p className="text-amber-500 text-[10px] mt-1 flex items-center gap-0.5">
+                              <i className="fas fa-exclamation-triangle"></i>
+                              Excede stock
                             </p>
                           )}
                         </div>
-                        <div className="col-span-3 md:col-span-3">
-                          <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                            Precio
-                          </label>
+                        <div className="col-span-2">
+                          <label className="text-[11px] font-medium text-surface-400 dark:text-surface-500 mb-1 block">Precio</label>
                           <input
                             type="number"
                             step="0.01"
                             {...register(`productos.${index}.precio`, { valueAsNumber: true })}
-                            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 text-center font-semibold bg-gray-100 dark:bg-gray-600"
+                            className="w-full px-3 py-2 bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg text-surface-900 dark:text-surface-50 text-sm text-center font-semibold focus:outline-none focus:border-mint-500 focus:ring-1 focus:ring-mint-500/20 transition-all"
                             placeholder="0.00"
                             min="0"
                           />
@@ -265,10 +213,9 @@ const RegisterSale = () => {
                             <button
                               type="button"
                               onClick={() => remove(index)}
-                              className="p-2 text-red-400 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-all duration-200 transform hover:scale-110"
-                              title="Eliminar producto"
+                              className="p-2 text-red-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                             >
-                              <i className="fas fa-trash text-sm"></i>
+                              <i className="fas fa-trash text-xs"></i>
                             </button>
                           )}
                         </div>
@@ -277,106 +224,63 @@ const RegisterSale = () => {
                   ))}
                 </div>
                 {errors.productos && (
-                  <p className="text-red-400 text-xs mt-3 flex items-center animate-pulse">
-                    <i className="fas fa-exclamation-circle mr-1"></i>
+                  <p className="text-red-400 text-xs mt-2 flex items-center gap-1">
+                    <i className="fas fa-exclamation-circle text-[10px]"></i>
                     {errors.productos.message || 'Verifica los productos'}
                   </p>
                 )}
               </div>
 
-              {/* Método de Pago */}
+              {/* Payment Method */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">
-                  <i className="fas fa-credit-card mr-2 text-green-500"></i>
+                <label className="block text-xs font-semibold text-surface-500 dark:text-surface-400 mb-3 uppercase tracking-wider">
                   Método de Pago
                 </label>
                 <input type="hidden" {...register('metodo_pago')} value={metodoSeleccionado} />
-                <div className="grid grid-cols-3 gap-3">
-                  {/* Efectivo Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMetodoSeleccionado('Efectivo');
-                      setValue('metodo_pago', 'Efectivo');
-                    }}
-                    className={`relative overflow-hidden rounded-lg p-4 font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-2 ${
-                      metodoSeleccionado === 'Efectivo'
-                        ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/50 border-2 border-green-400'
-                        : 'bg-white/50 dark:bg-white/5 border-2 border-white/20 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:border-white/40 dark:hover:border-white/20'
-                    }`}
-                  >
-                    <i className="fas fa-money-bill text-xl"></i>
-                    <span className="text-sm">Efectivo</span>
-                  </button>
-
-                  {/* Tarjeta Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMetodoSeleccionado('Tarjeta De Credito/Debito');
-                      setValue('metodo_pago', 'Tarjeta De Credito/Debito');
-                    }}
-                    className={`relative overflow-hidden rounded-lg p-4 font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-2 ${
-                      metodoSeleccionado === 'Tarjeta De Credito/Debito'
-                        ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/50 border-2 border-blue-400'
-                        : 'bg-white/50 dark:bg-white/5 border-2 border-white/20 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:border-white/40 dark:hover:border-white/20'
-                    }`}
-                  >
-                    <i className="fas fa-credit-card text-xl"></i>
-                    <span className="text-sm">Tarjeta</span>
-                  </button>
-
-                  {/* Yape Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMetodoSeleccionado('Yape');
-                      setValue('metodo_pago', 'Yape');
-                    }}
-                    className={`relative overflow-hidden rounded-lg p-4 font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-2 ${
-                      metodoSeleccionado === 'Yape'
-                        ? 'bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-lg shadow-purple-500/50 border-2 border-purple-400'
-                        : 'bg-white/50 dark:bg-white/5 border-2 border-white/20 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:border-white/40 dark:hover:border-white/20'
-                    }`}
-                  >
-                    <i className="fas fa-mobile-alt text-xl"></i>
-                    <span className="text-sm">Yape</span>
-                  </button>
+                <div className="grid grid-cols-3 gap-2">
+                  {paymentMethods.map((method) => (
+                    <button
+                      key={method.value}
+                      type="button"
+                      onClick={() => {
+                        setMetodoSeleccionado(method.value);
+                        setValue('metodo_pago', method.value);
+                      }}
+                      className={`rounded-lg p-3 text-sm font-semibold transition-all duration-200 flex flex-col items-center gap-1.5 border ${
+                        metodoSeleccionado === method.value
+                          ? 'bg-mint-500/10 dark:bg-mint-500/15 border-mint-500 text-mint-700 dark:text-mint-400'
+                          : 'bg-surface-50 dark:bg-surface-800 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:border-surface-300 dark:hover:border-surface-600'
+                      }`}
+                    >
+                      <i className={`fas ${method.icon} text-lg`}></i>
+                      <span className="text-xs">{method.label}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
                   disabled={mutation.isPending}
-                  className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg hover:shadow-xl hover:shadow-purple-500/50 relative overflow-hidden group"
+                  className="flex-1 py-3 bg-mint-500 hover:bg-mint-600 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-glow-mint hover:shadow-glow-mint-lg active:scale-[0.98]"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 transform -translate-x-full group-hover:translate-x-full transition-all duration-500"></div>
-                  <span className="relative flex items-center justify-center">
-                    {mutation.isPending ? (
-                      <>
-                        <i className="fas fa-spinner fa-spin mr-2"></i>
-                        Registrando...
-                      </>
-                    ) : (
-                      <>
-                        <i className="fas fa-check-circle mr-2"></i>
-                        Registrar Venta
-                      </>
-                    )}
-                  </span>
+                  {mutation.isPending ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <i className="fas fa-spinner fa-spin"></i>Registrando...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <i className="fas fa-check"></i>Registrar Venta
+                    </span>
+                  )}
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    reset();
-                    setTotal(0);
-                    setStockDisponible({});
-                  }}
-                  className="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                  onClick={() => { reset(); setTotal(0); setStockDisponible({}); }}
+                  className="px-5 py-3 border border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 font-semibold rounded-lg transition-colors text-sm"
                 >
-                  <i className="fas fa-redo"></i>
                   Limpiar
                 </button>
               </div>
@@ -384,62 +288,50 @@ const RegisterSale = () => {
           </div>
         </div>
 
-        {/* Summary Section */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-6 space-y-4">
-            {/* Total Card */}
-            <div className="relative overflow-hidden rounded-xl backdrop-blur-xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 dark:from-blue-600/10 dark:to-purple-600/10 border border-white/20 dark:border-white/10 p-6 hover:border-white/40 dark:hover:border-white/20 transition-all duration-300">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 to-purple-600/0 hover:from-blue-600/5 hover:to-purple-600/5 transition-all duration-300"></div>
-              <div className="relative">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 flex items-center">
-                  <i className="fas fa-calculator mr-2 text-blue-500"></i>
-                  Total de Venta
+        {/* Summary */}
+        <div className="space-y-4">
+          {/* Total */}
+          <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-5">
+            <p className="text-xs font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-wider mb-2">Total de Venta</p>
+            <div className="text-3xl font-bold text-mint-600 dark:text-mint-400">
+              {formatCurrency(total)}
+            </div>
+          </div>
+
+          {/* Items */}
+          <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                <i className="fas fa-box text-violet-500 text-sm"></i>
+              </div>
+              <div>
+                <p className="text-[11px] text-surface-400 dark:text-surface-500">Productos</p>
+                <p className="text-lg font-bold text-surface-900 dark:text-surface-50">{fields.length}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quantity */}
+          <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-mint-500/10 flex items-center justify-center">
+                <i className="fas fa-cubes text-mint-500 text-sm"></i>
+              </div>
+              <div>
+                <p className="text-[11px] text-surface-400 dark:text-surface-500">Cantidad Total</p>
+                <p className="text-lg font-bold text-surface-900 dark:text-surface-50">
+                  {productos.reduce((sum, prod) => sum + (prod.cantidad || 0), 0)}
                 </p>
-                <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
-                  {formatCurrency(total)}
-                </div>
               </div>
             </div>
+          </div>
 
-            {/* Items Count Card */}
-            <div className="relative overflow-hidden rounded-xl backdrop-blur-xl bg-white/50 dark:bg-white/5 border border-white/20 dark:border-white/10 p-4 hover:border-white/40 dark:hover:border-white/20 transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                    <i className="fas fa-box text-purple-500"></i>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Productos</p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">{fields.length}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Items Quantity Card */}
-            <div className="relative overflow-hidden rounded-xl backdrop-blur-xl bg-white/50 dark:bg-white/5 border border-white/20 dark:border-white/10 p-4 hover:border-white/40 dark:hover:border-white/20 transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                    <i className="fas fa-cubes text-green-500"></i>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Cantidad Total</p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">
-                      {productos.reduce((sum, prod) => sum + (prod.cantidad || 0), 0)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Info Card */}
-            <div className="relative overflow-hidden rounded-xl backdrop-blur-xl bg-white/50 dark:bg-white/5 border border-white/20 dark:border-white/10 p-4 hover:border-white/40 dark:hover:border-white/20 transition-all duration-300">
-              <p className="text-xs text-gray-600 dark:text-gray-400 flex items-start gap-2">
-                <i className="fas fa-info-circle text-blue-500 mt-0.5 flex-shrink-0"></i>
-                <span>Completa todos los campos requeridos para registrar la venta</span>
-              </p>
-            </div>
+          {/* Info */}
+          <div className="bg-surface-50 dark:bg-surface-800/50 border border-surface-200 dark:border-surface-800 rounded-xl p-4">
+            <p className="text-xs text-surface-400 dark:text-surface-500 flex items-start gap-2">
+              <i className="fas fa-info-circle text-mint-500/60 mt-0.5 flex-shrink-0"></i>
+              Completa todos los campos requeridos para registrar la venta
+            </p>
           </div>
         </div>
       </div>

@@ -1,15 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import '@fortawesome/fontawesome-free/css/all.min.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -23,112 +21,53 @@
 }
 
 body {
-  @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  @apply bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-50;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Scrollbar personalizado */
+/* Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100 dark:bg-gray-800;
+  @apply bg-transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  @apply bg-surface-300 dark:bg-surface-700 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400 dark:bg-gray-500;
+  @apply bg-surface-400 dark:bg-surface-600;
 }
 
-/* Select options styling for dark mode */
+/* Select styling */
 select {
   color-scheme: light dark;
 }
 
 select option {
-  background-color: white;
-  color: #1f2937;
+  @apply bg-white text-surface-900;
 }
 
-select option:checked {
-  background: linear-gradient(#0ea5e9, #0ea5e9);
-  background-color: #0ea5e9 !important;
-  color: white;
+.dark select option {
+  @apply bg-surface-900 text-surface-50;
 }
 
-@media (prefers-color-scheme: dark) {
-  select option {
-    background-color: #1e293b;
-    color: #f1f5f9;
-  }
-
-  select option:checked {
-    background: linear-gradient(#0ea5e9, #0ea5e9);
-    background-color: #0ea5e9 !important;
-    color: white;
-  }
-}
-
-/* Animaciones */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
+/* Animations */
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
 }
 
-/* Utilidades personalizadas */
-@layer utilities {
-  .card {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-all duration-300;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
-
-  .card:hover {
-    @apply shadow-lg;
-  }
-
-  .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
-  }
-
-  .btn-primary {
-    @apply bg-primary text-white hover:bg-primary-600 focus:ring-primary;
-  }
-
-  .btn-secondary {
-    @apply bg-secondary text-white hover:bg-secondary-600 focus:ring-secondary;
-  }
-
-  .btn-success {
-    @apply bg-success text-white hover:bg-green-600 focus:ring-success;
-  }
-
-  .btn-error {
-    @apply bg-error text-white hover:bg-red-600 focus:ring-error;
-  }
-
-  .btn-outline {
-    @apply border-2 border-primary text-primary hover:bg-primary hover:text-white focus:ring-primary;
-  }
-
-  .input {
-    @apply w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-200;
-  }
-
-  .label {
-    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

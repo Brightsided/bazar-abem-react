@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, isAdmin } from '../middleware/auth.js';
 import {
   generarComprobante,
   firmarComprobante,
@@ -15,8 +15,8 @@ import {
 
 const router = Router();
 
-// Aplicar middleware de autenticación a todas las rutas
-router.use(authenticate);
+// Aplicar middleware de autenticación y admin a todas las rutas
+router.use(authenticate, isAdmin);
 
 /**
  * Rutas de Facturación Electrónica SUNAT

@@ -22,30 +22,23 @@ const ProductSearch = ({ value, onChange, placeholder, onProductSelect, onStockC
   const { data: productosDisponibles = [] } = useQuery({
     queryKey: ['productos-disponibles'],
     queryFn: () => getProductosDisponibles(),
-    staleTime: 1000 * 60 * 5, // 5 minutos
+    staleTime: 1000 * 60 * 5,
   });
 
   const filteredProductos = productosDisponibles.filter((item) =>
     item.producto.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  useEffect(() => {
-    setSearchTerm(value);
-  }, [value]);
+  useEffect(() => { setSearchTerm(value); }, [value]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      // No cerrar si el click es en el wrapper o en el portal
       if (wrapperRef.current && !wrapperRef.current.contains(target)) {
-        // Verificar si el click es en el dropdown del portal
         const dropdownElement = document.querySelector('[data-product-dropdown]');
-        if (dropdownElement && !dropdownElement.contains(target)) {
-          setShowSuggestions(false);
-        }
+        if (dropdownElement && !dropdownElement.contains(target)) setShowSuggestions(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
@@ -61,84 +54,53 @@ const ProductSearch = ({ value, onChange, placeholder, onProductSelect, onStockC
   const updateDropdownPosition = () => {
     if (inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + window.scrollY + 8,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
+      setDropdownPosition({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX, width: rect.width });
     }
   };
 
-  const handleFocus = () => {
-    setShowSuggestions(true);
-    updateDropdownPosition();
-  };
+  const handleFocus = () => { setShowSuggestions(true); updateDropdownPosition(); };
 
   const handleSelectProduct = (producto: Almacenamiento) => {
     setSearchTerm(producto.producto.nombre);
     onChange(producto.producto.nombre, producto);
-    if (onProductSelect) {
-      onProductSelect(producto);
-    }
-    if (onStockChange) {
-      onStockChange(producto.stock);
-    }
-    if (onProductSelectFull) {
-      onProductSelectFull(producto);
-    }
+    onProductSelect?.(producto);
+    onStockChange?.(producto.stock);
+    onProductSelectFull?.(producto);
     setShowSuggestions(false);
   };
 
   return (
     <>
       <div ref={wrapperRef} className="relative w-full">
-        <input
-          ref={inputRef}
-          type="text"
-          value={searchTerm}
-          onChange={handleInputChange}
-          onFocus={handleFocus}
-          className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300"
-          placeholder={placeholder || 'Buscar producto...'}
-        />
+        <input ref={inputRef} type="text" value={searchTerm} onChange={handleInputChange} onFocus={handleFocus}
+          className="w-full px-3 py-2 bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg text-surface-900 dark:text-surface-50 placeholder-surface-400 dark:placeholder-surface-600 focus:outline-none focus:border-mint-500 focus:ring-1 focus:ring-mint-500/20 transition-all text-sm"
+          placeholder={placeholder || 'Buscar producto...'} />
       </div>
 
       {showSuggestions && filteredProductos.length > 0 &&
         createPortal(
-          <div
-            data-product-dropdown
-            className="fixed z-[9999] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-2xl max-h-96 overflow-y-auto"
-            style={{
-              top: `${dropdownPosition.top}px`,
-              left: `${dropdownPosition.left}px`,
-              width: `${dropdownPosition.width}px`,
-            }}
-          >
+          <div data-product-dropdown
+            className="fixed z-[9999] bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg shadow-xl max-h-80 overflow-y-auto"
+            style={{ top: `${dropdownPosition.top}px`, left: `${dropdownPosition.left}px`, width: `${dropdownPosition.width}px` }}>
             {filteredProductos.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => handleSelectProduct(item)}
-                className="w-full text-left px-4 py-3 hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors flex justify-between items-center border-b border-gray-100 dark:border-gray-700 last:border-b-0 group"
-              >
+              <button key={item.id} type="button" onClick={() => handleSelectProduct(item)}
+                className="w-full text-left px-3 py-2.5 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors flex justify-between items-center border-b border-surface-100 dark:border-surface-700 last:border-b-0 group">
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                  <div className="text-sm font-medium text-surface-900 dark:text-surface-50 group-hover:text-mint-600 dark:group-hover:text-mint-400 transition-colors truncate">
                     {item.producto.nombre}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Precio: <span className="font-bold text-green-600 dark:text-green-400">S/. {Number(item.producto.precio).toFixed(2)}</span>
+                  <div className="text-xs text-surface-400 dark:text-surface-500 mt-0.5">
+                    S/. <span className="font-semibold text-mint-600 dark:text-mint-400">{Number(item.producto.precio).toFixed(2)}</span>
                   </div>
                 </div>
-                <div className="text-right ml-3 flex-shrink-0">
-                  <div className={`text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap ${
-                    item.stock > 5 
-                      ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
-                      : item.stock > 0
-                      ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300'
-                      : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
+                <div className="ml-2 flex-shrink-0">
+                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                    item.stock > 5 ? 'bg-mint-500/10 text-mint-700 dark:text-mint-400'
+                      : item.stock > 0 ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                      : 'bg-red-500/10 text-red-700 dark:text-red-400'
                   }`}>
-                    📦 {item.stock}
-                  </div>
+                    {item.stock} uds
+                  </span>
                 </div>
               </button>
             ))}

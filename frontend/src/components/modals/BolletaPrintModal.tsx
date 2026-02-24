@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { X, Printer, Download, Loader } from 'lucide-react';
 import { VentaDetallada } from '@/types';
 import { reportesService } from '@/services/reportesService';
+import PdfViewer from '@/components/pdf/PdfViewer';
 
 interface BolletaPrintModalProps {
   isOpen: boolean;
@@ -102,12 +103,7 @@ export const BolletaPrintModal = ({ isOpen, onClose, venta }: BolletaPrintModalP
               </div>
             </div>
           ) : pdfUrl ? (
-            <iframe
-              title="Vista previa boleta"
-              src={pdfUrl}
-              className="w-full h-full"
-              style={{ border: 'none' }}
-            />
+            <PdfViewer fileUrl={pdfUrl} />
           ) : (
             <div className="h-full flex items-center justify-center text-gray-600 dark:text-gray-400">
               No se pudo cargar la boleta.

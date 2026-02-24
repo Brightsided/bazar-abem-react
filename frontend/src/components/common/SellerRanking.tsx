@@ -1,4 +1,3 @@
-import { Trophy, Medal, Award, Star } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 
 interface Vendedor {
@@ -15,67 +14,29 @@ interface SellerRankingProps {
 }
 
 export const SellerRanking = ({ ranking }: SellerRankingProps) => {
-  const getMedalIcon = (index: number) => {
-    switch (index) {
-      case 0:
-        return <Trophy className="w-6 h-6 text-yellow-400" />;
-      case 1:
-        return <Medal className="w-6 h-6 text-gray-400" />;
-      case 2:
-        return <Award className="w-6 h-6 text-amber-600" />;
-      default:
-        return <Star className="w-6 h-6 text-blue-500" />;
-    }
-  };
-
-  const getBackgroundColor = (index: number) => {
-    switch (index) {
-      case 0:
-        return 'bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg shadow-yellow-500/50';
-      case 1:
-        return 'bg-gradient-to-br from-gray-300 to-gray-500 shadow-lg shadow-gray-400/50';
-      case 2:
-        return 'bg-gradient-to-br from-amber-500 to-amber-700 shadow-lg shadow-amber-500/50';
-      default:
-        return 'bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/50';
-    }
-  };
+  const medals = ['🥇', '🥈', '🥉'];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {ranking.map((vendedor, index) => (
         <div
           key={vendedor.id}
-          className="relative overflow-hidden rounded-lg backdrop-blur-sm bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/10 p-4 hover:border-white/40 dark:hover:border-white/20 transition-all duration-300 group"
+          className="bg-surface-50 dark:bg-surface-800/50 border border-surface-200 dark:border-surface-800 rounded-lg p-3 hover:border-surface-300 dark:hover:border-surface-700 transition-colors"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/0 to-orange-600/0 group-hover:from-yellow-600/5 group-hover:to-orange-600/5 transition-all duration-300"></div>
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg ${getBackgroundColor(
-                  index
-                )}`}
-              >
-                {getMedalIcon(index)}
-              </div>
-              <div>
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  {vendedor.nombre}
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
-                  <i className="fas fa-shopping-bag mr-1 text-blue-500"></i>
-                  {vendedor.cantidad} ventas
-                </p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-surface-200 dark:bg-surface-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
+              {medals[index] || `#${index + 1}`}
             </div>
-            <div className="text-right">
-              <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                {formatCurrency(vendedor.total)}
-              </p>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                <i className="fas fa-chart-line text-green-500 mr-1"></i>
-                Ingresos
-              </p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-surface-900 dark:text-surface-50 truncate">{vendedor.nombre}</p>
+                  <p className="text-[11px] text-surface-400 dark:text-surface-500">{vendedor.cantidad} ventas</p>
+                </div>
+                <p className="text-sm font-bold text-mint-600 dark:text-mint-400 flex-shrink-0 ml-2">
+                  {formatCurrency(vendedor.total)}
+                </p>
+              </div>
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { VentaDetallada, ComprobanteElectronico } from '@/types';
 import { facturacionService } from '@/services/facturacionService';
 import { formatDate, formatCurrency } from '@/utils/formatters';
@@ -8,7 +8,7 @@ interface SunatModalProps {
   isOpen: boolean;
   onClose: () => void;
   venta: VentaDetallada | null;
-  onSuccess?: () => void;
+  onSuccess?: (ventaId: number) => void;
 }
 
 export const SunatModal = ({ isOpen, onClose, venta, onSuccess }: SunatModalProps) => {
@@ -16,7 +16,42 @@ export const SunatModal = ({ isOpen, onClose, venta, onSuccess }: SunatModalProp
   const [comprobante, setComprobante] = useState<ComprobanteElectronico | null>(null);
   const [step, setStep] = useState<'inicio' | 'procesando' | 'resultado'>('inicio');
 
+  // Al abrir, si ya existe comprobante, mostrar el estado/descargas en vez de permitir reenviar.
+  useEffect(() => {
+    if (!isOpen || !venta) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const detalles = await facturacionService.obtenerDetalles(venta.id);
+        if (cancelled) return;
+
+        if (detalles.success && detalles.comprobante) {
+          setComprobante(detalles.comprobante);
+          setStep('resultado');
+        } else {
+          setComprobante(null);
+          setStep('inicio');
+        }
+      } catch {
+        // Si no hay comprobante aún o falla la consulta, dejamos el modal en inicio.
+        if (!cancelled) {
+          setComprobante(null);
+          setStep('inicio');
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, venta?.id]);
+
   if (!isOpen || !venta) return null;
+
+  const canOnlyDownload =
+    comprobante?.estado && ['ACEPTADO', 'ENVIADO', 'FIRMADO'].includes(comprobante.estado);
 
   const handleProcesar = async () => {
     try {
@@ -42,7 +77,7 @@ export const SunatModal = ({ isOpen, onClose, venta, onSuccess }: SunatModalProp
         });
 
         if (onSuccess) {
-          onSuccess();
+          onSuccess(venta.id);
         }
       } else {
         Swal.fire({
@@ -356,7 +391,7 @@ export const SunatModal = ({ isOpen, onClose, venta, onSuccess }: SunatModalProp
 
               {/* Botones de acción */}
               <div className="flex gap-3">
-                {comprobante.estado === 'RECHAZADO' && (
+                {comprobante.estado === 'RECHAZADO' && !canOnlyDownload && (
                   <button
                     onClick={handleReenviar}
                     disabled={loading}

@@ -24,22 +24,12 @@ const Calculator = () => {
       const prev = parseFloat(previousValue);
       const current = parseFloat(display);
       let result = 0;
-
       switch (operation) {
-        case '+':
-          result = prev + current;
-          break;
-        case '-':
-          result = prev - current;
-          break;
-        case '*':
-          result = prev * current;
-          break;
-        case '/':
-          result = prev / current;
-          break;
+        case '+': result = prev + current; break;
+        case '-': result = prev - current; break;
+        case '*': result = prev * current; break;
+        case '/': result = prev / current; break;
       }
-
       setDisplay(result.toString());
       setPreviousValue(null);
       setOperation(null);
@@ -58,125 +48,55 @@ const Calculator = () => {
     }
   };
 
+  const numBtn = "py-2.5 px-3 rounded-lg text-sm font-semibold bg-surface-100 dark:bg-surface-800 text-surface-900 dark:text-surface-100 hover:bg-surface-200 dark:hover:bg-surface-700 border border-surface-200 dark:border-surface-700 transition-colors active:scale-95 duration-100";
+  const opBtn = "py-2.5 px-3 rounded-lg text-sm font-semibold bg-mint-500/10 dark:bg-mint-500/15 text-mint-700 dark:text-mint-400 hover:bg-mint-500/20 dark:hover:bg-mint-500/25 border border-mint-200 dark:border-mint-800 transition-colors active:scale-95 duration-100";
+
   return (
-    <div className="relative overflow-hidden rounded-xl backdrop-blur-xl bg-white/50 dark:bg-white/5 light:bg-white/80 border border-white/20 dark:border-white/10 light:border-gray-200 p-6 hover:border-white/40 dark:hover:border-white/20 light:hover:border-gray-300 transition-all duration-300">
-      {/* Background Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 to-blue-600/5 dark:from-purple-600/10 dark:to-blue-600/10 light:from-purple-600/5 light:to-blue-600/5 opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+    <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-5">
+      <h2 className="text-sm font-semibold text-surface-900 dark:text-surface-50 mb-3 flex items-center gap-2">
+        <i className="fas fa-calculator text-mint-500 text-xs"></i>
+        Calculadora
+      </h2>
 
-      {/* Content */}
-      <div className="relative">
-        {/* Header */}
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white light:text-gray-900 mb-4 flex items-center">
-          <i className="fas fa-calculator mr-2 text-purple-500 dark:text-purple-400 light:text-purple-600"></i>
-          Calculadora
-        </h2>
-        
-        {/* Display */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 light:from-gray-100 light:to-gray-200 rounded-lg p-4 mb-4 border border-white/10 dark:border-white/10 light:border-gray-300">
-          <div className="text-right text-3xl font-mono text-transparent bg-gradient-to-r from-blue-400 to-purple-400 dark:from-blue-400 dark:to-purple-400 light:from-blue-600 light:to-purple-600 bg-clip-text font-bold break-all">
-            {display}
+      {/* Display */}
+      <div className="bg-surface-950 rounded-lg p-3 mb-3 border border-surface-800">
+        <div className="text-right text-2xl font-mono text-mint-400 font-bold break-all leading-tight">
+          {display}
+        </div>
+        {operation && previousValue && (
+          <div className="text-right text-xs text-surface-500 mt-1">
+            {previousValue} {operation}
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Buttons Grid */}
-        <div className="grid grid-cols-4 gap-2">
-          {/* Clear Button */}
-          <button
-            onClick={handleClear}
-            className="col-span-2 py-3 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-red-500/50"
-          >
-            <i className="fas fa-redo mr-1"></i>C
-          </button>
-          
-          {/* Division */}
-          <button
-            onClick={() => handleOperation('/')}
-            className="py-3 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-orange-500/50"
-          >
-            ÷
-          </button>
-          
-          {/* Multiply */}
-          <button
-            onClick={() => handleOperation('*')}
-            className="py-3 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-orange-500/50"
-          >
-            ×
-          </button>
+      {/* Buttons */}
+      <div className="grid grid-cols-4 gap-1.5">
+        <button onClick={handleClear} className="col-span-2 py-2.5 px-3 rounded-lg text-sm font-semibold bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 border border-red-200 dark:border-red-900 transition-colors active:scale-95 duration-100">
+          C
+        </button>
+        <button onClick={() => handleOperation('/')} className={opBtn}>÷</button>
+        <button onClick={() => handleOperation('*')} className={opBtn}>×</button>
 
-          {/* Numbers 7, 8, 9 */}
-          {[7, 8, 9].map((num) => (
-            <button
-              key={num}
-              onClick={() => handleNumber(num.toString())}
-              className="py-3 px-4 rounded-lg font-semibold text-gray-900 dark:text-white bg-white/80 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 transition-all duration-200 transform hover:scale-105 active:scale-95 border border-white/20 dark:border-white/10"
-            >
-              {num}
-            </button>
-          ))}
-          
-          {/* Subtract */}
-          <button
-            onClick={() => handleOperation('-')}
-            className="py-3 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-orange-500/50"
-          >
-            −
-          </button>
+        {[7, 8, 9].map((n) => (
+          <button key={n} onClick={() => handleNumber(n.toString())} className={numBtn}>{n}</button>
+        ))}
+        <button onClick={() => handleOperation('-')} className={opBtn}>−</button>
 
-          {/* Numbers 4, 5, 6 */}
-          {[4, 5, 6].map((num) => (
-            <button
-              key={num}
-              onClick={() => handleNumber(num.toString())}
-              className="py-3 px-4 rounded-lg font-semibold text-gray-900 dark:text-white bg-white/80 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 transition-all duration-200 transform hover:scale-105 active:scale-95 border border-white/20 dark:border-white/10"
-            >
-              {num}
-            </button>
-          ))}
-          
-          {/* Add */}
-          <button
-            onClick={() => handleOperation('+')}
-            className="py-3 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-orange-500/50"
-          >
-            +
-          </button>
+        {[4, 5, 6].map((n) => (
+          <button key={n} onClick={() => handleNumber(n.toString())} className={numBtn}>{n}</button>
+        ))}
+        <button onClick={() => handleOperation('+')} className={opBtn}>+</button>
 
-          {/* Numbers 1, 2, 3 */}
-          {[1, 2, 3].map((num) => (
-            <button
-              key={num}
-              onClick={() => handleNumber(num.toString())}
-              className="py-3 px-4 rounded-lg font-semibold text-gray-900 dark:text-white bg-white/80 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 transition-all duration-200 transform hover:scale-105 active:scale-95 border border-white/20 dark:border-white/10"
-            >
-              {num}
-            </button>
-          ))}
-          
-          {/* Equals */}
-          <button
-            onClick={handleEquals}
-            className="row-span-2 py-3 px-4 rounded-lg font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-purple-500/50"
-          >
-            =
-          </button>
+        {[1, 2, 3].map((n) => (
+          <button key={n} onClick={() => handleNumber(n.toString())} className={numBtn}>{n}</button>
+        ))}
+        <button onClick={handleEquals} className="row-span-2 py-2.5 px-3 rounded-lg text-sm font-bold bg-mint-500 text-white hover:bg-mint-600 transition-colors active:scale-95 duration-100">
+          =
+        </button>
 
-          {/* Zero */}
-          <button
-            onClick={() => handleNumber('0')}
-            className="col-span-2 py-3 px-4 rounded-lg font-semibold text-gray-900 dark:text-white bg-white/80 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 transition-all duration-200 transform hover:scale-105 active:scale-95 border border-white/20 dark:border-white/10"
-          >
-            0
-          </button>
-          
-          {/* Decimal */}
-          <button
-            onClick={handleDecimal}
-            className="py-3 px-4 rounded-lg font-semibold text-gray-900 dark:text-white bg-white/80 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 transition-all duration-200 transform hover:scale-105 active:scale-95 border border-white/20 dark:border-white/10"
-          >
-            .
-          </button>
-        </div>
+        <button onClick={() => handleNumber('0')} className={`col-span-2 ${numBtn}`}>0</button>
+        <button onClick={handleDecimal} className={numBtn}>.</button>
       </div>
     </div>
   );

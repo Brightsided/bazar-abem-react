@@ -1,11 +1,6 @@
 import { useMemo } from 'react';
 import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend,
-  Tooltip,
+  PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip,
 } from 'recharts';
 import { useThemeStore } from '@/store/themeStore';
 
@@ -17,19 +12,16 @@ export const PaymentMethodChart = ({ data }: PaymentMethodChartProps) => {
   const { isDark } = useThemeStore();
 
   const chartData = useMemo(() => {
-    return Object.entries(data).map(([metodo, total]) => ({
-      name: metodo,
-      value: total,
-    }));
+    return Object.entries(data).map(([metodo, total]) => ({ name: metodo, value: total }));
   }, [data]);
 
   const COLORS: Record<string, string> = {
-    'Efectivo': '#22c55e',
-    'Yape': '#a855f7',
-    'Tarjeta De Credito/Debito': '#3b82f6',
+    'Efectivo': '#10b981',
+    'Yape': '#8b5cf6',
+    'Tarjeta De Credito/Debito': '#0ea5e9',
   };
 
-  const getColor = (name: string) => COLORS[name] || '#6366f1';
+  const getColor = (name: string) => COLORS[name] || '#34d399';
 
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -41,8 +33,11 @@ export const PaymentMethodChart = ({ data }: PaymentMethodChartProps) => {
           labelLine={false}
           label={({ name, value }) => `${name}: S/ ${value.toFixed(2)}`}
           outerRadius={80}
-          fill="#8884d8"
+          innerRadius={40}
+          fill="#10b981"
           dataKey="value"
+          strokeWidth={2}
+          stroke={isDark ? '#18181b' : '#ffffff'}
         >
           {chartData.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={getColor(entry.name)} />
@@ -50,14 +45,17 @@ export const PaymentMethodChart = ({ data }: PaymentMethodChartProps) => {
         </Pie>
         <Tooltip
           contentStyle={{
-            backgroundColor: isDark ? '#1f2937' : '#ffffff',
-            border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+            backgroundColor: isDark ? '#18181b' : '#ffffff',
+            border: `1px solid ${isDark ? '#27272a' : '#e4e4e7'}`,
             borderRadius: '8px',
-            color: isDark ? '#d1d5db' : '#4b5563',
+            color: isDark ? '#fafafa' : '#18181b',
+            fontSize: '12px',
           }}
-          formatter={(value: number) => `S/ ${value.toFixed(2)}`}
+          formatter={(value: number) => [`S/ ${value.toFixed(2)}`, 'Total']}
         />
-        <Legend wrapperStyle={{ color: isDark ? '#d1d5db' : '#4b5563' }} />
+        <Legend
+          wrapperStyle={{ color: isDark ? '#a1a1aa' : '#71717a', fontSize: '12px' }}
+        />
       </PieChart>
     </ResponsiveContainer>
   );

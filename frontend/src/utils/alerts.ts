@@ -1,44 +1,28 @@
 import Swal from 'sweetalert2';
+import { toast } from 'sonner';
+
+// ⚠️ NOTA
+// Este proyecto usaba SweetAlert2. Se mantiene para confirmaciones/modales (showConfirm/showLoading)
+// y se migra a Sonner para notificaciones rápidas (success/error/info).
 
 export const showAlert = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
-  const iconMap = {
-    success: 'success',
-    error: 'error',
-    warning: 'warning',
-    info: 'info',
-  };
+  if (type === 'success') return showSuccess(message);
+  if (type === 'error') return showError(message);
 
-  const titleMap = {
-    success: '¡Éxito!',
-    error: 'Error',
-    warning: 'Advertencia',
-    info: 'Información',
-  };
+  if (type === 'warning') {
+    toast.warning('Advertencia', { description: message });
+    return;
+  }
 
-  Swal.fire({
-    icon: iconMap[type],
-    title: titleMap[type],
-    text: message,
-    confirmButtonColor: '#6366f1',
-  });
+  toast(message);
 };
 
 export const showSuccess = (message: string) => {
-  Swal.fire({
-    icon: 'success',
-    title: '¡Éxito!',
-    text: message,
-    confirmButtonColor: '#6366f1',
-  });
+  toast.success('¡Éxito!', { description: message });
 };
 
 export const showError = (message: string) => {
-  Swal.fire({
-    icon: 'error',
-    title: 'Error',
-    text: message,
-    confirmButtonColor: '#ef4444',
-  });
+  toast.error('Error', { description: message });
 };
 
 export const showConfirm = async (message: string): Promise<boolean> => {
@@ -47,7 +31,7 @@ export const showConfirm = async (message: string): Promise<boolean> => {
     title: '¿Estás seguro?',
     text: message,
     showCancelButton: true,
-    confirmButtonColor: '#6366f1',
+    confirmButtonColor: '#10b981',
     cancelButtonColor: '#ef4444',
     confirmButtonText: 'Sí, continuar',
     cancelButtonText: 'Cancelar',
