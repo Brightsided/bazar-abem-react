@@ -4,6 +4,7 @@ import {
   getAlmacenamiento, getProductosStockBajo, getAlertasStock, generarCodigoBarras,
   actualizarAlmacenamiento, actualizarPrecioProducto, Almacenamiento, AlertaStock,
 } from '../services/almacenamientoService';
+import api from '../services/api';
 import { showAlert } from '../utils/alerts';
 
 export default function AlmacenamientoPage() {
@@ -361,17 +362,17 @@ export default function AlmacenamientoPage() {
                 if (!newProduct.nombre || !newProduct.precio || !newProduct.stock || !newProduct.stock_minimo) { showAlert('Por favor completa todos los campos', 'error'); return; }
                 setAddingProduct(true);
                 try {
-                  const productoResponse = await fetch('http://localhost:3000/api/productos', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-                    body: JSON.stringify({ nombre: newProduct.nombre, precio: parseFloat(newProduct.precio) }),
+                  const productoResponse = await api.post('/productos', {
+                    nombre: newProduct.nombre,
+                    precio: parseFloat(newProduct.precio),
                   });
-                  if (!productoResponse.ok) { const err = await productoResponse.json(); throw new Error(err.message || 'Error al crear producto'); }
-                  const producto = await productoResponse.json();
-                  const almacenResponse = await fetch('http://localhost:3000/api/almacenamiento', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-                    body: JSON.stringify({ producto_id: producto.id, stock: parseInt(newProduct.stock), stock_minimo: parseInt(newProduct.stock_minimo) }),
+                  const producto = productoResponse.data;
+
+                  await api.post('/almacenamiento', {
+                    producto_id: producto.id,
+                    stock: parseInt(newProduct.stock),
+                    stock_minimo: parseInt(newProduct.stock_minimo),
                   });
-                  if (!almacenResponse.ok) { const err = await almacenResponse.json(); throw new Error(err.message || 'Error al crear almacenamiento'); }
                   showAlert('Producto agregado exitosamente', 'success');
                   setShowAddModal(false); setNewProduct({ nombre: '', precio: '', stock: '', stock_minimo: '' }); cargarDatos();
                 } catch (error: any) {
