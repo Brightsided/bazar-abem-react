@@ -4,6 +4,8 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Routes
 import authRoutes from './routes/auth.js';
@@ -25,6 +27,8 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(helmet());
@@ -32,7 +36,7 @@ app.use(helmet());
 // CORS configuración segura
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? (process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : false)
+    ? (process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : true)
     : ['http://localhost:5173', 'http://127.0.0.1:5173'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -62,6 +66,20 @@ app.use('/api/comprobantes', comprobantesRoutes);
 app.use('/api/almacenamiento', almacenamientoRoutes);
 app.use('/api/facturacion', facturacionRoutes);
 app.use('/api/cierre-caja', cierreCajaRoutes);
+
+// Servir frontend compilado cuando backend y frontend se despliegan en el mismo servicio.
+if (process.env.NODE_ENV === 'production') {
+  const frontendDistPath = path.resolve(__dirname, '../../frontend/dist');
+  app.use(express.static(frontendDistPath));
+
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path === '/health') {
+      return next();
+    }
+
+    return res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
+}
 
 // Health check
 app.get('/health', (req, res) => {
