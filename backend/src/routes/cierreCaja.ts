@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { authenticate, isAdmin } from '../middleware/auth';
+import { authenticate, isAdmin } from '../middleware/auth.js';
 import {
   abrirCaja,
   cerrarCaja,
   listarCierres,
   obtenerEstadoCaja,
   previsualizarCierre,
-} from '../controllers/cierreCajaController';
+} from '../controllers/cierreCajaController.js';
 
 const router = Router();
 
