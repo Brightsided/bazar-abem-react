@@ -30,6 +30,9 @@ const PORT = process.env.PORT || 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Railway expone la app detrás de proxy; esto evita falsos errores en rate-limit.
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(helmet());
 
