@@ -208,7 +208,7 @@ export const firmarXml = async (xmlContent: string): Promise<string> => {
 
 /**
  * Envía el comprobante a SUNAT BETA
- * En ambiente real, se usaría SOAP con certificado digital
+ * En ambiente real, se usaría SOAP con certificado digital para NO OLVIDARME
  */
 export const enviarASunatBeta = async (
   ventaId: number,
@@ -301,9 +301,11 @@ export const obtenerEstadoComprobante = async (ventaId: number) => {
     });
 
     if (!comprobante) {
+      // Si no existe comprobante, devolver success: true con estado SIN ENVIAR
       return {
-        success: false,
-        message: 'Comprobante no encontrado',
+        success: true,
+        comprobante: null,
+        message: 'Comprobante aún no generado',
       };
     }
 

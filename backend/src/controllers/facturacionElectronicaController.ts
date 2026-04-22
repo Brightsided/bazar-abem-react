@@ -245,11 +245,8 @@ export const obtenerEstado = async (req: AuthRequest, res: Response) => {
 
     const resultado = await obtenerEstadoComprobante(parseInt(ventaId));
 
-    if (resultado.success) {
-      res.json(resultado);
-    } else {
-      res.status(404).json(resultado);
-    }
+    // Siempre devolver 200 OK, el frontend maneja el estado según success
+    res.json(resultado);
   } catch (error) {
     console.error('Error obteniendo estado:', error);
     res.status(500).json({
