@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X, Printer, Download, Loader } from 'lucide-react';
+import { X, Printer, Download, Loader, FileText } from 'lucide-react';
 import { VentaDetallada } from '@/types';
 import { reportesService } from '@/services/reportesService';
 import PdfViewer from '@/components/pdf/PdfViewer';
@@ -20,7 +20,6 @@ export const BolletaPrintModal = ({ isOpen, onClose, venta }: BolletaPrintModalP
     return `boleta_${String(venta.id).padStart(8, '0')}.pdf`;
   }, [venta]);
 
-  // Cargar PDF del backend para que sea 100% igual al adjunto por email
   useEffect(() => {
     let objectUrl: string | null = null;
 
@@ -53,14 +52,12 @@ export const BolletaPrintModal = ({ isOpen, onClose, venta }: BolletaPrintModalP
 
     setIsGenerating(true);
 
-    // Abrir el PDF (backend) en una pestaña para imprimirlo (misma boleta exacta)
     const win = window.open(pdfUrl, '_blank');
     if (!win) {
       setIsGenerating(false);
       return;
     }
 
-    // Esperar un poco para que cargue y disparar print
     const timer = window.setTimeout(() => {
       try {
         win.focus();
@@ -72,54 +69,53 @@ export const BolletaPrintModal = ({ isOpen, onClose, venta }: BolletaPrintModalP
       }
     }, 800);
 
-    // Si se cierra antes, limpiar
     win.addEventListener('beforeunload', () => window.clearTimeout(timer));
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col border border-surface-200 dark:border-surface-700">
         {/* Header */}
-        <div className="bg-gradient-to-r from-orange-600 to-red-600 p-6 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-mint-600 to-mint-500 p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <i className="fas fa-receipt text-2xl text-white"></i>
-            <h2 className="text-xl font-bold text-white">Vista Previa - Boleta</h2>
+            <FileText className="w-6 h-6 text-white" />
+            <h2 className="text-lg font-bold text-white">Vista Previa - Boleta</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-white hover:bg-white/20 p-2 rounded-lg transition"
+            className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content - PDF Viewer (desde backend) */}
-        <div className="flex-1 overflow-hidden bg-gray-100 dark:bg-gray-950">
+        {/* Content - PDF Viewer */}
+        <div className="flex-1 overflow-hidden bg-surface-100 dark:bg-surface-950">
           {isLoadingPdf ? (
             <div className="h-full flex items-center justify-center">
-              <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                <Loader className="w-5 h-5 animate-spin" />
+              <div className="flex items-center gap-3 text-surface-600 dark:text-surface-400">
+                <Loader className="w-5 h-5 animate-spin text-mint-500" />
                 <span>Cargando boleta...</span>
               </div>
             </div>
           ) : pdfUrl ? (
             <PdfViewer fileUrl={pdfUrl} />
           ) : (
-            <div className="h-full flex items-center justify-center text-gray-600 dark:text-gray-400">
+            <div className="h-full flex items-center justify-center text-surface-500">
               No se pudo cargar la boleta.
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 dark:bg-gray-800 px-6 py-4 flex gap-3 border-t border-gray-200 dark:border-gray-700">
+        <div className="bg-surface-50 dark:bg-surface-800 px-5 py-4 flex gap-3 border-t border-surface-200 dark:border-surface-700">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            className="flex-1 px-4 py-2.5 border border-surface-300 dark:border-surface-600 rounded-xl text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 transition font-medium text-sm"
           >
             Cerrar
           </button>
-          
+
           <button
             onClick={() => {
               if (!pdfUrl) return;
@@ -131,7 +127,7 @@ export const BolletaPrintModal = ({ isOpen, onClose, venta }: BolletaPrintModalP
               a.remove();
             }}
             disabled={!pdfUrl || isLoadingPdf}
-            className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2.5 bg-mint-500/10 text-mint-700 dark:text-mint-400 border border-mint-200 dark:border-mint-800 rounded-xl hover:bg-mint-500/20 transition disabled:opacity-50 flex items-center justify-center gap-2 font-medium text-sm"
           >
             <Download className="w-4 h-4" />
             Descargar
@@ -140,7 +136,7 @@ export const BolletaPrintModal = ({ isOpen, onClose, venta }: BolletaPrintModalP
           <button
             onClick={handlePrint}
             disabled={isGenerating}
-            className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg hover:shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2.5 bg-mint-600 text-white rounded-xl hover:bg-mint-700 shadow-glow-mint hover:shadow-glow-mint-lg transition disabled:opacity-50 flex items-center justify-center gap-2 font-medium text-sm"
           >
             <Printer className="w-4 h-4" />
             {isGenerating ? 'Preparando...' : 'Imprimir'}

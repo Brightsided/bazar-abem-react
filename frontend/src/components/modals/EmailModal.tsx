@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Mail, Loader } from 'lucide-react';
+import { X, Mail, Loader, Send } from 'lucide-react';
 import { VentaDetallada } from '@/types';
 import { reportesService } from '@/services/reportesService';
 import Swal from 'sweetalert2';
@@ -39,7 +39,6 @@ export const EmailModal = ({ isOpen, onClose, venta }: EmailModalProps) => {
 
     setIsLoading(true);
     try {
-      // Enviar boleta y factura
       await reportesService.enviarEmailConBoleta(venta.id, email);
 
       Swal.fire({
@@ -65,25 +64,25 @@ export const EmailModal = ({ isOpen, onClose, venta }: EmailModalProps) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+      <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden border border-surface-200 dark:border-surface-700">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-mint-600 to-mint-500 p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Mail className="w-6 h-6 text-white" />
-            <h2 className="text-xl font-bold text-white">Enviar por Email</h2>
+            <h2 className="text-lg font-bold text-white">Enviar por Email</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-white hover:bg-white/20 p-2 rounded-lg transition"
+            className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="p-5 space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
+            <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 mb-2">
               Email del cliente
             </label>
             <input
@@ -91,43 +90,43 @@ export const EmailModal = ({ isOpen, onClose, venta }: EmailModalProps) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="cliente@example.com"
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2.5 border border-surface-300 dark:border-surface-600 rounded-xl bg-white dark:bg-surface-800 text-surface-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-mint-500 focus:border-mint-500 transition text-sm"
             />
           </div>
 
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              <i className="fas fa-info-circle mr-2"></i>
+          <div className="bg-mint-50 dark:bg-mint-900/20 border border-mint-200 dark:border-mint-800 rounded-xl p-4">
+            <p className="text-sm text-mint-800 dark:text-mint-200 flex items-start gap-2">
+              <Mail className="w-4 h-4 mt-0.5 shrink-0" />
               Se enviarán la boleta y factura a este email
             </p>
           </div>
 
           {/* Detalles de la venta */}
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-semibold">Cliente:</span> {venta.cliente}
+          <div className="bg-surface-50 dark:bg-surface-800 rounded-xl p-4 space-y-2">
+            <p className="text-sm text-surface-600 dark:text-surface-400">
+              <span className="font-semibold text-surface-700 dark:text-surface-300">Cliente:</span> {venta.cliente}
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-semibold">Total:</span> S/ {Number(venta.precio_total).toFixed(2)}
+            <p className="text-sm text-surface-600 dark:text-surface-400">
+              <span className="font-semibold text-surface-700 dark:text-surface-300">Total:</span> S/ {Number(venta.precio_total).toFixed(2)}
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-semibold">Método:</span> {venta.metodo_pago}
+            <p className="text-sm text-surface-600 dark:text-surface-400">
+              <span className="font-semibold text-surface-700 dark:text-surface-300">Método:</span> {venta.metodo_pago}
             </p>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 dark:bg-gray-800 px-6 py-4 flex gap-3">
+        <div className="bg-surface-50 dark:bg-surface-800 px-5 py-4 flex gap-3 border-t border-surface-200 dark:border-surface-700">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            className="flex-1 px-4 py-2.5 border border-surface-300 dark:border-surface-600 rounded-xl text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 transition font-medium text-sm"
           >
             Cancelar
           </button>
           <button
             onClick={handleSendEmail}
             disabled={isLoading}
-            className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2.5 bg-mint-600 text-white rounded-xl hover:bg-mint-700 shadow-glow-mint hover:shadow-glow-mint-lg transition disabled:opacity-50 flex items-center justify-center gap-2 font-medium text-sm"
           >
             {isLoading ? (
               <>
@@ -136,7 +135,7 @@ export const EmailModal = ({ isOpen, onClose, venta }: EmailModalProps) => {
               </>
             ) : (
               <>
-                <Mail className="w-4 h-4" />
+                <Send className="w-4 h-4" />
                 Enviar
               </>
             )}

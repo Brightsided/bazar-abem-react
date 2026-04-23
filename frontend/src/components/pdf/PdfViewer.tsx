@@ -6,13 +6,12 @@ import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
 export default function PdfViewer({ fileUrl }: { fileUrl: string }) {
   const defaultLayoutPluginInstance = defaultLayoutPlugin({
-    sidebarTabs: (defaultTabs) => defaultTabs, // mantener por defecto
+    sidebarTabs: (defaultTabs) => defaultTabs,
   });
 
   return (
     <div className="h-full w-full overflow-hidden bg-gray-100 dark:bg-gray-950">
-      {/* Worker CDN - evita config manual en Vite */}
-      <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+      <Worker workerUrl="/pdf.worker.min.js">
         <Viewer fileUrl={fileUrl} plugins={[defaultLayoutPluginInstance]} />
       </Worker>
     </div>
