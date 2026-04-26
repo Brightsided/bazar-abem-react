@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import { Venta, DetalleVenta } from '@prisma/client';
 
 interface VentaConDetalles extends Venta {
@@ -9,9 +10,119 @@ interface VentaConDetalles extends Venta {
   } | null;
 }
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+type EmailProvider = 'resend' | 'smtp';
 
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Bazar Abem <onboarding@resend.dev>';
+const DEFAULT_FROM_EMAIL = 'Bazar Abem <onboarding@resend.dev>';
+const DEFAULT_SMTP_PORT = 587;
+
+const getEmailProvider = (): EmailProvider => {
+  const provider = (process.env.EMAIL_PROVIDER || 'resend').trim().toLowerCase();
+  return provider === 'smtp' ? 'smtp' : 'resend';
+};
+
+const getFromEmail = (): string => {
+  const provider = getEmailProvider();
+  if (provider === 'smtp') {
+    const smtpFromName = process.env.SMTP_FROM_NAME?.trim() || 'Bazar Abem';
+    const smtpFromEmail = process.env.SMTP_FROM_EMAIL?.trim() || process.env.SMTP_USERNAME?.trim();
+    if (!smtpFromEmail) {
+      throw new Error('SMTP_FROM_EMAIL o SMTP_USERNAME es requerido para SMTP');
+    }
+    return `${smtpFromName} <${smtpFromEmail}>`;
+  }
+
+  return process.env.RESEND_FROM_EMAIL || DEFAULT_FROM_EMAIL;
+};
+
+const validateEmailRecipient = (email: string): string => {
+  const normalizedEmail = email.trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(normalizedEmail)) {
+    throw new Error('Email del destinatario inválido');
+  }
+
+  return normalizedEmail;
+};
+
+const sendWithResend = async (
+  email: string,
+  subject: string,
+  html: string,
+  attachments: Array<{ filename: string; content: string }>
+): Promise<void> => {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY no está configurada');
+  }
+
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from: getFromEmail(),
+    to: [email],
+    subject,
+    html,
+    attachments,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+};
+
+const sendWithSmtp = async (
+  email: string,
+  subject: string,
+  html: string,
+  attachments: Array<{ filename: string; content: string }>
+): Promise<void> => {
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpUsername = process.env.SMTP_USERNAME;
+  const smtpPassword = process.env.SMTP_PASSWORD;
+
+  if (!smtpHost || !smtpUsername || !smtpPassword) {
+    throw new Error('Faltan variables SMTP requeridas: SMTP_HOST, SMTP_USERNAME, SMTP_PASSWORD');
+  }
+
+  const smtpPort = Number(process.env.SMTP_PORT || DEFAULT_SMTP_PORT);
+  const smtpSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465;
+
+  const transporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure,
+    auth: {
+      user: smtpUsername,
+      pass: smtpPassword,
+    },
+  });
+
+  await transporter.sendMail({
+    from: getFromEmail(),
+    to: email,
+    subject,
+    html,
+    attachments: attachments.map((attachment) => ({
+      filename: attachment.filename,
+      content: Buffer.from(attachment.content, 'base64'),
+      contentType: 'application/pdf',
+    })),
+  });
+};
+
+const sendEmailByProvider = async (
+  email: string,
+  subject: string,
+  html: string,
+  attachments: Array<{ filename: string; content: string }>
+): Promise<void> => {
+  const provider = getEmailProvider();
+  if (provider === 'smtp') {
+    await sendWithSmtp(email, subject, html, attachments);
+    return;
+  }
+  await sendWithResend(email, subject, html, attachments);
+};
 
 export const sendComprobanteEmail = async (
   email: string,
@@ -21,6 +132,7 @@ export const sendComprobanteEmail = async (
   filename?: string
 ): Promise<void> => {
   try {
+    const recipient = validateEmailRecipient(email);
     const tipoComprobante = tipo === 'boleta' ? 'Boleta' : 'Factura';
     const numeroComprobante = tipo === 'boleta' 
       ? String(venta.id).padStart(8, '0')
@@ -29,23 +141,17 @@ export const sendComprobanteEmail = async (
     const htmlContent = buildSingleComprobanteHtml(venta, tipoComprobante, numeroComprobante);
     const attachmentFilename = filename || `${tipo}_${numeroComprobante}.pdf`;
 
-    const { error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: [email],
-      subject: `${tipoComprobante} de Venta N° ${numeroComprobante} - Bazar Abem`,
-      html: htmlContent,
-      attachments: [
+    await sendEmailByProvider(
+      recipient,
+      `${tipoComprobante} de Venta N° ${numeroComprobante} - Bazar Abem`,
+      htmlContent,
+      [
         {
           filename: attachmentFilename,
           content: pdfBuffer.toString('base64'),
         },
-      ],
-    });
-
-    if (error) {
-      console.error('Resend error:', error);
-      throw new Error(error.message);
-    }
+      ]
+    );
   } catch (error) {
     console.error('Error sending email:', error);
     throw new Error('Error al enviar el correo electrónico');
@@ -59,17 +165,17 @@ export const sendBoletaAndFacturaEmail = async (
   facturaPDF: Buffer
 ): Promise<void> => {
   try {
+    const recipient = validateEmailRecipient(email);
     const numeroBoletaDescarga = String(venta.id).padStart(8, '0');
     const numeroFacturaDescarga = `F001-${String(venta.id).padStart(8, '0')}`;
 
     const htmlContent = buildBoletaFacturaHtml(venta, numeroBoletaDescarga, numeroFacturaDescarga);
 
-    const { error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: [email],
-      subject: `Comprobantes de Venta - Boleta N° ${numeroBoletaDescarga} y Factura N° ${numeroFacturaDescarga} - Bazar Abem`,
-      html: htmlContent,
-      attachments: [
+    await sendEmailByProvider(
+      recipient,
+      `Comprobantes de Venta - Boleta N° ${numeroBoletaDescarga} y Factura N° ${numeroFacturaDescarga} - Bazar Abem`,
+      htmlContent,
+      [
         {
           filename: `boleta_${numeroBoletaDescarga}.pdf`,
           content: boletaPDF.toString('base64'),
@@ -78,13 +184,8 @@ export const sendBoletaAndFacturaEmail = async (
           filename: `factura_${numeroFacturaDescarga}.pdf`,
           content: facturaPDF.toString('base64'),
         },
-      ],
-    });
-
-    if (error) {
-      console.error('Resend error:', error);
-      throw new Error(error.message);
-    }
+      ]
+    );
   } catch (error) {
     console.error('Error sending email:', error);
     throw new Error('Error al enviar el correo electrónico');
@@ -93,6 +194,15 @@ export const sendBoletaAndFacturaEmail = async (
 
 export const verifyEmailConfig = async (): Promise<boolean> => {
   try {
+    const provider = getEmailProvider();
+    if (provider === 'smtp') {
+      if (!process.env.SMTP_HOST || !process.env.SMTP_USERNAME || !process.env.SMTP_PASSWORD) {
+        console.error('SMTP config is incomplete');
+        return false;
+      }
+      return true;
+    }
+
     if (!process.env.RESEND_API_KEY) {
       console.error('RESEND_API_KEY is not set');
       return false;

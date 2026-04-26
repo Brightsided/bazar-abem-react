@@ -8,7 +8,9 @@
     "prebuild": "node -e \"const fs=require('fs');const s='node_modules/pdfjs-dist/build/pdf.worker.min.js';const d='public/pdf.worker.min.js';if(fs.existsSync(s)){fs.mkdirSync('public',{recursive:true});fs.copyFileSync(s,d)}\"",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run --coverage"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.5.0",
@@ -46,6 +48,7 @@
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/coverage-v8": "^3.2.4",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
@@ -53,6 +56,7 @@
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.2.2",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "vitest": "^3.2.4"
   }
 }
