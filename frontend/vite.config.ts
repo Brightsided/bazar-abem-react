@@ -22,4 +22,12 @@ export default defineConfig({
   build: {
     outDir: 'dist',
   },
+  test: {
+    globals: true,
+    environment: 'node',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+    },
+  },
 })
